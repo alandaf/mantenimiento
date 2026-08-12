@@ -1,13 +1,14 @@
 # GMAO-AI · Gálvanica Operaciones Inteligentes
 
 Sistema de gestión de mantenimiento (CMMS) con KPIs de confiabilidad calculados
-sobre datos reales. **Fase 1 + 2 completa**: modelo de datos, CRUD de activos y
-órdenes de trabajo, motor de KPIs y dashboard.
+sobre datos reales. **Fases 1–3 completas**: modelo de datos, CRUD de activos y
+órdenes de trabajo, motor de KPIs, dashboard y priorización asistida por IA.
 
 ## Stack
 
 Next.js 15 (App Router, RSC + Server Actions) · TypeScript strict · Tailwind v4 ·
-Postgres 17 · Drizzle ORM · Zod · Recharts · Vitest. Todo corre en Docker.
+Postgres 17 · Drizzle ORM · Zod · Recharts · Vitest · Claude (`@anthropic-ai/sdk`).
+Todo corre en Docker.
 
 ## Arrancar
 
@@ -78,6 +79,30 @@ Decisiones que evitan errores comunes:
 - **Toda correctiva exige modo de falla**, porque sin él no hay Pareto ni
   análisis de causa raíz.
 
+## Priorización con IA (fase 3)
+
+La página `/priorizacion` combina dos capas que nunca se mezclan:
+
+1. **Score determinista 0–100**, calculado en el servidor por una función pura
+   con tests ([risk.ts](src/lib/kpi/risk.ts)). Cinco factores con techo propio:
+   criticidad del activo (30), prioridad declarada (25), antigüedad de la OT (18),
+   fallas repetidas en 90 días (15) y exposición económica por hora de parada (12).
+2. **Análisis de Claude**, que recibe ese score ya calculado y aporta lo que la
+   aritmética no ve: patrones de falla repetitiva, planes preventivos vencidos,
+   dependencias entre equipos de una línea.
+
+Claude accede a los datos mediante **tool use** — `get_kpis`, `get_failure_pareto`,
+`get_asset_context`, `get_asset_history` — todas de solo lectura y todas devolviendo
+cifras ya computadas en SQL. **El modelo no calcula ningún indicador**: si no puede
+verificar un número con una herramienta, no puede afirmarlo. La salida se fuerza con
+*structured outputs* contra un esquema JSON y se valida con Zod antes de tocar la BD.
+
+Cada ejecución queda registrada en `ai_insights` con el modelo, el prompt, los datos
+de entrada y el consumo de tokens — trazable de punta a punta.
+
+Sin `ANTHROPIC_API_KEY` la aplicación funciona igual y el score determinista sigue
+visible; solo se deshabilita el botón de análisis.
+
 ## Estructura
 
 ```
@@ -85,12 +110,16 @@ src/
 ├─ app/
 │  ├─ dashboard/        KPIs, tendencia, Pareto, malos actores
 │  ├─ activos/          CRUD + jerarquía (CTE recursiva)
-│  └─ ordenes/          CRUD + filtros + cierre rápido
+│  ├─ ordenes/          CRUD + filtros + cierre rápido
+│  └─ priorizacion/     score determinista + análisis de Claude
 ├─ components/          UI, gráficos, formularios
 ├─ db/schema/           Drizzle: activos, OT, modos de falla, planes, ai_insights
 └─ lib/
-   ├─ kpi/formulas.ts   funciones puras + tests
+   ├─ kpi/formulas.ts   MTTR, MTBF, disponibilidad, Pareto — puras + tests
+   ├─ kpi/risk.ts       score de riesgo de OT — puro + tests
    ├─ kpi/queries.ts    agregación en SQL
+   ├─ ai/tools.ts       herramientas de solo lectura para tool use
+   ├─ ai/prioritize.ts  bucle agéntico + salida estructurada
    ├─ actions/          Server Actions
    └─ validation.ts     esquemas Zod compartidos
 ```
@@ -99,7 +128,7 @@ src/
 
 - [x] **F1** Esquema, seed y CRUD de activos y órdenes de trabajo
 - [x] **F2** Motor de KPIs y dashboard
-- [ ] **F3** Priorización de OT con Claude vía *tool use* (la tabla
-      `ai_insights` ya registra modelo, prompt e inputs para auditoría)
+- [x] **F3** Priorización de OT con Claude vía *tool use*, con score determinista
+      y bitácora auditable en `ai_insights`
 - [ ] **F4** Análisis de causa raíz y detección de fallas repetitivas
 - [ ] **F5** Importador de Excel, exportación PDF y despliegue al VPS
