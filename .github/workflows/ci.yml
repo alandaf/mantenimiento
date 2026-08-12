@@ -1,8 +1,8 @@
 name: CI
 
 on:
+  # Todas las ramas: un fallo se detecta antes de abrir el PR, no después.
   push:
-    branches: [main]
   pull_request:
 
 jobs:
