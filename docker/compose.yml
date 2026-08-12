@@ -1,0 +1,20 @@
+name: gmao
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gmao}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gmao}
+      POSTGRES_DB: ${POSTGRES_DB:-gmao}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gmao} -d ${POSTGRES_DB:-gmao}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #0a0e1a;
+  --color-ink-900: #0f1524;
+  --color-ink-850: #141b2d;
+  --color-ink-800: #1a2338;
+  --color-ink-700: #253049;
+  --color-ink-600: #364260;
+  --color-ink-400: #7c89a8;
+  --color-ink-300: #a3aec7;
+  --color-ink-100: #e4e9f2;
+
+  --color-brand-600: #1d4ed8;
+  --color-brand-500: #2563eb;
+  --color-brand-400: #3b82f6;
+  --color-brand-300: #60a5fa;
+
+  --color-ok-500: #10b981;
+  --color-warn-500: #f59e0b;
+  --color-bad-500: #ef4444;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Panel base reutilizado por tarjetas, tablas y gráficos. */
+@utility panel {
+  background: var(--color-ink-900);
+  border: 1px solid var(--color-ink-800);
+  border-radius: 0.875rem;
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink-950);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-700);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-600);
+}

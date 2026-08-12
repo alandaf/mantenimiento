@@ -1,0 +1,56 @@
+import { relations } from "drizzle-orm";
+import {
+  index,
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
+import { assetStatusEnum, criticalityEnum } from "./enums";
+
+/**
+ * Jerarquía de activos (planta → línea → equipo → componente) mediante
+ * autoreferencia en `parentId`.
+ */
+export const assets = pgTable(
+  "assets",
+  {
+    id: serial("id").primaryKey(),
+    tag: varchar("tag", { length: 32 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull(),
+    parentId: integer("parent_id").references((): any => assets.id, {
+      onDelete: "set null",
+    }),
+    criticality: criticalityEnum("criticality").notNull().default("C"),
+    status: assetStatusEnum("status").notNull().default("operando"),
+    location: varchar("location", { length: 120 }),
+    manufacturer: varchar("manufacturer", { length: 120 }),
+    model: varchar("model", { length: 120 }),
+    serialNumber: varchar("serial_number", { length: 120 }),
+    /** Costo de una hora de parada de este activo — alimenta la priorización. */
+    downtimeCostPerHour: integer("downtime_cost_per_hour").notNull().default(0),
+    notes: text("notes"),
+    installedAt: timestamp("installed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    parentIdx: index("assets_parent_idx").on(t.parentId),
+    criticalityIdx: index("assets_criticality_idx").on(t.criticality),
+  }),
+);
+
+export const assetsRelations = relations(assets, ({ one, many }) => ({
+  parent: one(assets, {
+    fields: [assets.parentId],
+    references: [assets.id],
+    relationName: "asset_hierarchy",
+  }),
+  children: many(assets, { relationName: "asset_hierarchy" }),
+}));
+
+export type Asset = typeof assets.$inferSelect;
+export type NewAsset = typeof assets.$inferInsert;
