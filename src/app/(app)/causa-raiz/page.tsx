@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { requireRole } from "@/lib/session";
 import Link from "next/link";
 import { Badge, EmptyState, PageHeader, Panel, money } from "@/components/ui";
 import { db } from "@/db";
@@ -50,6 +51,8 @@ async function getLatestAnalyses(): Promise<
 }
 
 export default async function CausaRaizPage() {
+  // Ocultar el enlace del menú no basta: hay que cerrar la página.
+  await requireRole("tecnico");
   const [patterns, analyses] = await Promise.all([
     getFailurePatterns(),
     getLatestAnalyses(),

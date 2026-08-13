@@ -1,4 +1,5 @@
 import { Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
+import { requireRole } from "@/lib/session";
 import { dateFmt } from "@/lib/config";
 import { getAssetMeters } from "@/lib/kpi/meter-queries";
 import { ReadingForm } from "./reading-form";
@@ -10,6 +11,8 @@ export const metadata = { title: "Horómetros · GMAO-AI" };
 const STALE_DAYS = 30;
 
 export default async function HorometrosPage() {
+  // Ocultar el enlace del menú no basta: hay que cerrar la página.
+  await requireRole("tecnico");
   const meters = await getAssetMeters();
   const stale = meters.filter(
     (m) => m.staleDays === null || m.staleDays > STALE_DAYS,

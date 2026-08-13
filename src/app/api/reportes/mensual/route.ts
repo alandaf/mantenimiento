@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { buildMonthlyReport } from "@/lib/report/monthly";
 import { renderMonthlyReportPdf } from "@/lib/report/pdf";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 // El renderizado de PDF necesita APIs de Node, no del runtime edge.
@@ -8,6 +9,11 @@ export const runtime = "nodejs";
 
 /** GET /api/reportes/mensual?mes=2026-08 → PDF descargable. */
 export async function GET(request: NextRequest) {
+  // El reporte contiene costos, fallas y activos: sin esta comprobación
+  // cualquiera con la URL se lleva la operación completa de la instalación.
+  const { response } = await requireSessionOrUnauthorized();
+  if (response) return response;
+
   const mes = request.nextUrl.searchParams.get("mes") ?? "";
   const match = mes.match(/^(\d{4})-(\d{2})$/);
 

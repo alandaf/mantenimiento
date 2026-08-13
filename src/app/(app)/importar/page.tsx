@@ -1,10 +1,13 @@
 import { Button, PageHeader, Panel } from "@/components/ui";
+import { requireRole } from "@/lib/session";
 import { COLUMNS, type ColumnKey } from "@/lib/import/schema";
 import { ImportForm } from "./import-form";
 
 export const metadata = { title: "Importar órdenes de trabajo · GMAO-AI" };
 
-export default function ImportarPage() {
+export default async function ImportarPage() {
+  // Ocultar el enlace del menú no basta: hay que cerrar la página.
+  await requireRole("planificador");
   const keys = Object.keys(COLUMNS) as ColumnKey[];
 
   return (

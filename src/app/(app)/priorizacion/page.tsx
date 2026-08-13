@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import { requireRole } from "@/lib/session";
 import Link from "next/link";
 import { Badge, EmptyState, PageHeader, Panel, money } from "@/components/ui";
 import { db } from "@/db";
@@ -18,6 +19,8 @@ const BAND_STYLES: Record<string, string> = {
 };
 
 export default async function PrioritizacionPage() {
+  // Ocultar el enlace del menú no basta: hay que cerrar la página.
+  await requireRole("tecnico");
   const [orders, [latest]] = await Promise.all([
     getOpenWorkOrders(),
     db

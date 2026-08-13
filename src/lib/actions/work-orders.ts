@@ -1,6 +1,7 @@
 "use server";
 
 import { eq, sql } from "drizzle-orm";
+import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -39,6 +40,7 @@ export async function createWorkOrder(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireRole("tecnico");
   const parsed = workOrderSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return toActionState(parsed.error);
 
@@ -60,6 +62,7 @@ export async function updateWorkOrder(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireRole("tecnico");
   const parsed = workOrderSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return toActionState(parsed.error);
 
@@ -86,6 +89,7 @@ export async function updateWorkOrder(
  * reporte como inicio, para no generar un MTTR imposible de calcular.
  */
 export async function closeWorkOrder(id: number): Promise<ActionState> {
+  await requireRole("tecnico");
   let advanced = false;
   try {
     await db.transaction(async (tx) => {
@@ -114,6 +118,7 @@ export async function closeWorkOrder(id: number): Promise<ActionState> {
 }
 
 export async function deleteWorkOrder(id: number): Promise<ActionState> {
+  await requireRole("tecnico");
   await db.delete(workOrders).where(eq(workOrders.id, id));
   revalidatePath("/ordenes");
   revalidatePath("/dashboard");

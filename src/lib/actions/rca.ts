@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/session";
 import { MissingApiKeyError } from "@/lib/ai/client";
 import { analyzeRootCause } from "@/lib/ai/rca";
 
@@ -12,6 +13,7 @@ export type RcaState = {
 export async function runRootCauseAnalysis(
   patternKey: string,
 ): Promise<RcaState> {
+  await requireRole("tecnico");
   try {
     const run = await analyzeRootCause(patternKey);
     revalidatePath("/causa-raiz");

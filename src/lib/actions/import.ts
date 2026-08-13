@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/session";
 import { parseWorkbook } from "@/lib/import/parse";
 import { COLUMNS, type ColumnKey } from "@/lib/import/schema";
 import { commitRows, validateRows, type ValidationReport } from "@/lib/import/validate";
@@ -21,6 +22,7 @@ export async function importWorkOrders(
   _prev: ImportState,
   formData: FormData,
 ): Promise<ImportState> {
+  await requireRole("planificador");
   const file = formData.get("file");
   const confirm = formData.get("confirm") === "1";
 

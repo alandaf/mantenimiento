@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/session";
 import { MissingApiKeyError } from "@/lib/ai/client";
 import { prioritizeWorkOrders } from "@/lib/ai/prioritize";
 
@@ -10,6 +11,7 @@ export type PrioritizeState = {
 };
 
 export async function runPrioritization(): Promise<PrioritizeState> {
+  await requireRole("tecnico");
   try {
     const run = await prioritizeWorkOrders();
     revalidatePath("/priorizacion");

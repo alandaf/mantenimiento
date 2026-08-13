@@ -1,6 +1,7 @@
 "use server";
 
 import { and, desc, eq, gt, lt, sql } from "drizzle-orm";
+import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
@@ -38,6 +39,7 @@ export async function addMeterReading(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireRole("tecnico");
   const parsed = readingSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return {
@@ -129,6 +131,7 @@ export async function addMeterReading(
 
 /** Elimina una lectura — para corregir un tecleo sin perder la serie. */
 export async function deleteMeterReading(id: number): Promise<ActionState> {
+  await requireRole("tecnico");
   await db.delete(meterReadings).where(eq(meterReadings.id, id));
   revalidatePath("/horometros");
   revalidatePath("/preventivo");

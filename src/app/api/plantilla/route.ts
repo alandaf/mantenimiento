@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { COLUMNS, type ColumnKey } from "@/lib/import/schema";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,11 @@ export const dynamic = "force-dynamic";
  * errores de formato antes de que ocurran.
  */
 export async function GET() {
+  // Los route handlers viven fuera del layout autenticado: si no comprueban
+  // sesión por su cuenta, quedan abiertos a cualquiera.
+  const { response } = await requireSessionOrUnauthorized();
+  if (response) return response;
+
   const wb = new ExcelJS.Workbook();
   wb.creator = "GMAO-AI";
   wb.created = new Date();
