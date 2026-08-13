@@ -30,6 +30,8 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-}
       APP_LOCALE: ${APP_LOCALE:-}
       APP_CURRENCY: ${APP_CURRENCY:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3100}
     volumes:
       # Bind mount del código para HMR...
       - ..:/app

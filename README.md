@@ -56,6 +56,38 @@ docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env e
 - `pnpm db:seed marino` — flota marina: sala de máquinas, cubierta y casco de un
   buque portacontenedores
 
+## Autenticación y roles
+
+Correo y contraseña, sin registro público: **las cuentas las crea el
+administrador de la instalación**. Se eligió así por el contexto — a bordo la
+conectividad es intermitente y un flujo OAuth contra un proveedor externo puede
+quedar colgado, y el Jefe de Máquinas necesita dar de alta al cadete que embarca
+mañana sin depender de TI en tierra.
+
+| Rol | Puede |
+|---|---|
+| Administrador | Todo, más la gestión de cuentas |
+| Jefe de Máquinas | Todo el mantenimiento; no gestiona cuentas |
+| Planificador | Además importa datos y planifica rutinas |
+| Técnico | Registra lecturas, ejecuta y cierra órdenes |
+| Solo lectura | Consulta tableros y reportes |
+
+Tres decisiones que sostienen esto:
+
+- **Ocultar un enlace del menú no es seguridad.** El rol se comprueba en cada
+  página y, sobre todo, en cada acción del servidor — que es la puerta real.
+- **Los route handlers viven fuera del layout autenticado**, así que comprueban
+  sesión por su cuenta. El PDF mensual contiene costos, fallas y activos: sin esa
+  comprobación cualquiera con la URL se llevaba la operación completa.
+- **Las cuentas se deshabilitan, no se borran.** El histórico de órdenes queda
+  ligado a quien las ejecutó; borrarlas rompería la trazabilidad.
+
+La primera cuenta nace fuera de la aplicación, porque no hay registro público:
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env exec web pnpm tsx scripts/create-admin.ts "Rodrigo Vergara" jefe@naviera.cl "contrasena-larga"
+```
+
 ## Configuración regional
 
 La moneda y el locale se definen en `.env` y se leen en un solo sitio
@@ -282,5 +314,6 @@ src/
       (5 Porqués + Ishikawa) con evidencia e hipótesis diferenciadas
 - [x] **F5** Importador de Excel y reporte mensual en PDF
 - [x] **F6** Preventivo por horas de marcha (horómetros)
-- [ ] **F7** Autenticación y roles
-- [ ] **F8** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)
+- [x] **F7** Autenticación por correo y contraseña, con roles y gestión de cuentas
+- [ ] **F8** `organization_id` en el dominio y configuración en base de datos
+- [ ] **F9** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)

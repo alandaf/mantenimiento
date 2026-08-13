@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -15,6 +16,7 @@ export async function createAsset(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireRole("planificador");
   const parsed = parse(formData);
   if (!parsed.success) return toActionState(parsed.error);
 
@@ -34,6 +36,7 @@ export async function updateAsset(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireRole("planificador");
   const parsed = parse(formData);
   if (!parsed.success) return toActionState(parsed.error);
 
@@ -58,6 +61,7 @@ export async function updateAsset(
 }
 
 export async function deleteAsset(id: number): Promise<ActionState> {
+  await requireRole("planificador");
   try {
     await db.delete(assets).where(eq(assets.id, id));
   } catch {
