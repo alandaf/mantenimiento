@@ -51,12 +51,11 @@ export const DEFAULT_ORG = "default";
  * defecto en vez de fallar.
  */
 async function resolveOrgId(): Promise<string> {
-  try {
-    const { getActiveOrgId } = await import("./org");
-    return await getActiveOrgId();
-  } catch {
-    return DEFAULT_ORG;
-  }
+  // Se usa la variante que devuelve `null`, no la que redirige: un `try/catch`
+  // alrededor de `getActiveOrgId` se tragaría la señal de redirección de Next y
+  // la dejaría sin efecto.
+  const { findActiveOrgId } = await import("./org");
+  return (await findActiveOrgId()) ?? DEFAULT_ORG;
 }
 
 function env(name: string, fallback: string): string {

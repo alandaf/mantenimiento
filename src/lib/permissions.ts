@@ -60,4 +60,14 @@ export const admin = ac.newRole({
   ia: ["ejecutar"],
 });
 
-export const roles = { lectura, tecnico, planificador, jefe, admin };
+/**
+ * Operador de la plataforma. No es "un admin con más permisos": vive fuera de
+ * las instalaciones y no aparece en la tripulación de ninguna. Da de alta
+ * buques y su primer administrador, y ahí termina su trabajo — no gestiona el
+ * mantenimiento de nadie.
+ */
+export const superadmin = ac.newRole({
+  ...adminAc.statements,
+});
+
+export const roles = { lectura, tecnico, planificador, jefe, admin, superadmin };

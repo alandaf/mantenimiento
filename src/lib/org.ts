@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { isSuperadmin } from "./roles";
 import { getSession } from "./session";
 
 /**
@@ -12,19 +14,20 @@ import { getSession } from "./session";
  */
 export async function getActiveOrgId(): Promise<string> {
   const orgId = await findActiveOrgId();
-  if (!orgId) {
-    throw new Error(
-      "El usuario no pertenece a ninguna instalación. Contacta al administrador.",
-    );
-  }
-  return orgId;
+  if (orgId) return orgId;
+
+  // Sin organización no hay nada que consultar, así que se corta aquí.
+  //
+  // Se redirige en vez de lanzar por cómo renderiza Next: el layout y la página
+  // se ejecutan **en paralelo**, así que una comprobación en el layout no
+  // impide que la página lance su consulta. Lanzar dejaba una excepción en el
+  // log en cada carga; `redirect()` es una señal que el framework entiende y
+  // detiene el render limpiamente, desde cualquier punto que llame aquí.
+  const session = await getSession();
+  redirect(isSuperadmin(session?.user.role) ? "/plataforma" : "/sin-instalacion");
 }
 
-/**
- * Variante que devuelve `null` en vez de lanzar. La usa el layout para mostrar
- * una explicación cuando una cuenta se queda sin instalación, en lugar de dejar
- * que la excepción se propague y el usuario vea una pantalla en blanco.
- */
+/** Variante que devuelve `null` en vez de redirigir. */
 export async function findActiveOrgId(): Promise<string | null> {
   const session = await getSession();
   if (!session) return null;

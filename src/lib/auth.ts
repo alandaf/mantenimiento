@@ -43,7 +43,10 @@ export const auth = betterAuth({
     admin({
       ac,
       roles,
-      adminRoles: ["admin"],
+      // El operador de la plataforma también crea cuentas —la del primer
+      // administrador de cada buque—, así que la API de administración tiene
+      // que reconocerlo.
+      adminRoles: ["admin", "superadmin"],
       defaultRole: "lectura",
     }),
   ],
