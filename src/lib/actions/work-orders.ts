@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { workOrders } from "@/db/schema";
+import { advancePlanForWorkOrder } from "./advance-plan";
 import {
   toActionState,
   workOrderSchema,
@@ -63,7 +64,12 @@ export async function updateWorkOrder(
   if (!parsed.success) return toActionState(parsed.error);
 
   try {
-    await db.update(workOrders).set(toRow(parsed.data)).where(eq(workOrders.id, id));
+    await db.transaction(async (tx) => {
+      await tx.update(workOrders).set(toRow(parsed.data)).where(eq(workOrders.id, id));
+      if (parsed.data.status === "cerrada") {
+        await advancePlanForWorkOrder(tx, id);
+      }
+    });
   } catch {
     return { ok: false, message: "No se pudo actualizar la orden de trabajo." };
   }
@@ -71,6 +77,7 @@ export async function updateWorkOrder(
   revalidatePath("/ordenes");
   revalidatePath(`/ordenes/${id}`);
   revalidatePath("/dashboard");
+  revalidatePath("/preventivo");
   redirect("/ordenes");
 }
 
@@ -79,21 +86,31 @@ export async function updateWorkOrder(
  * reporte como inicio, para no generar un MTTR imposible de calcular.
  */
 export async function closeWorkOrder(id: number): Promise<ActionState> {
+  let advanced = false;
   try {
-    await db.execute(sql`
-      UPDATE work_orders
-      SET status = 'cerrada',
-          started_at = COALESCE(started_at, reported_at),
-          finished_at = COALESCE(finished_at, now())
-      WHERE id = ${id} AND status NOT IN ('cerrada', 'anulada')
-    `);
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`
+        UPDATE work_orders
+        SET status = 'cerrada',
+            started_at = COALESCE(started_at, reported_at),
+            finished_at = COALESCE(finished_at, now())
+        WHERE id = ${id} AND status NOT IN ('cerrada', 'anulada')
+      `);
+      advanced = await advancePlanForWorkOrder(tx, id);
+    });
   } catch {
     return { ok: false, message: "No se pudo cerrar la orden." };
   }
 
   revalidatePath("/ordenes");
   revalidatePath("/dashboard");
-  return { ok: true, message: "Orden cerrada." };
+  revalidatePath("/preventivo");
+  return {
+    ok: true,
+    message: advanced
+      ? "Orden cerrada y plan preventivo reprogramado."
+      : "Orden cerrada.",
+  };
 }
 
 export async function deleteWorkOrder(id: number): Promise<ActionState> {
