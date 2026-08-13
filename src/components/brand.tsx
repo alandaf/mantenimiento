@@ -41,7 +41,10 @@ export function BrandMark({ size = 36 }: { size?: number }) {
         alt={BRAND.name}
         width={size}
         height={size}
-        className="shrink-0 rounded-lg bg-white object-contain p-0.5"
+        // Círculo, no cuadrado: la marca ya es circular y un fondo cuadrado
+        // deja esquinas blancas alrededor. El fondo blanco sí hace falta:
+        // el logo es negro y la interfaz es oscura.
+        className="shrink-0 rounded-full bg-white object-contain p-[3px]"
         style={{ width: size, height: size }}
       />
     );
