@@ -160,8 +160,9 @@ export async function listUsers() {
 
   // Solo la gente de esta instalación: el administrador de un buque no tiene
   // por qué ver —ni tocar— la tripulación de otro.
-  return (await db.execute(sql`
-    SELECT u.id, u.name, u.email, u.role, u.banned, u.created_at AS "createdAt"
+  const rows = (await db.execute(sql`
+    SELECT u.id, u.name, u.email, u.role, u.banned,
+           to_char(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SSZ') AS "createdAt"
     FROM "user" u
     JOIN member m ON m.user_id = u.id
     WHERE m.organization_id = ${orgId}
@@ -172,8 +173,13 @@ export async function listUsers() {
     email: string;
     role: string | null;
     banned: boolean | null;
-    createdAt: Date;
+    createdAt: string;
   }>;
+
+  // `db.execute` devuelve la fila cruda del driver, sin el mapeo de tipos que
+  // hace el query builder: la fecha llegaba como texto y `Intl` reventaba con
+  // "Invalid time value". Se serializa en ISO y se reconstruye aquí.
+  return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt) }));
 }
 
 /** Comprueba que un usuario pertenece a la instalación activa. */
