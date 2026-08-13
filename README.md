@@ -1,6 +1,8 @@
-# GMAO-AI · Gálvanica Operaciones Inteligentes
+# PMS SIMARP
 
-Sistema de gestión de mantenimiento (CMMS) con KPIs de confiabilidad calculados
+**Planned Maintenance System** para flotas marinas e instalaciones industriales.
+
+Sistema de gestión de mantenimiento con KPIs de confiabilidad calculados
 sobre datos reales. **Fases 1–5 completas**: modelo de datos, CRUD de activos y
 órdenes de trabajo, motor de KPIs, dashboard, priorización asistida por IA, análisis de causa raíz, importador de
 Excel y reporte mensual en PDF.

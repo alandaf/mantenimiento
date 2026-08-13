@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/session";
 import { COLUMNS, type ColumnKey } from "@/lib/import/schema";
 import { ImportForm } from "./import-form";
 
-export const metadata = { title: "Importar órdenes de trabajo · GMAO-AI" };
+export const metadata = { title: "Importar órdenes de trabajo" };
 
 export default async function ImportarPage() {
   // Ocultar el enlace del menú no basta: hay que cerrar la página.

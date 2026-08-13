@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND, BrandMark } from "@/components/brand";
 import { NavLink } from "@/components/nav-link";
 import { UserMenu } from "@/components/user-menu";
 import { hasRole, requireSession, ROLES, type Role } from "@/lib/session";
@@ -38,12 +39,12 @@ export default async function AppLayout({
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-900 lg:flex">
         <Link href="/dashboard" className="flex items-center gap-2.5 px-5 py-6">
-          <span className="grid size-9 place-items-center rounded-lg bg-brand-500 text-lg font-bold">
-            G
-          </span>
+          <BrandMark size={36} />
           <span className="leading-tight">
-            <span className="block text-sm font-bold tracking-wide">GMAO-AI</span>
-            <span className="block text-[11px] text-ink-400">Gálvanica</span>
+            <span className="block text-sm font-bold tracking-wide">
+              {BRAND.product}
+            </span>
+            <span className="block text-[11px] text-ink-400">{BRAND.tagline}</span>
           </span>
         </Link>
 

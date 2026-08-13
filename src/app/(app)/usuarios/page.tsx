@@ -5,7 +5,7 @@ import { requireRole, ROLES, type Role } from "@/lib/session";
 import { CreateUserForm, UserRowActions } from "./user-admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Usuarios · GMAO-AI" };
+export const metadata = { title: "Usuarios" };
 
 export default async function UsuariosPage() {
   const session = await requireRole("admin");

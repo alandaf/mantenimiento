@@ -19,6 +19,9 @@ import {
  */
 export type MonthlyReport = {
   period: Period;
+  /** Nombre de la instalación: el buque o la planta. Sale de los datos, no
+   *  está cableado: el reporte es del cliente, no del proveedor. */
+  installation: { name: string; location: string | null };
   monthLabel: string;
   generatedAt: Date;
   summary: KpiSummary;
@@ -87,8 +90,14 @@ export async function buildMonthlyReport(
 
   const [{ opened, closed }] = counts;
 
+  // Raíz del árbol de activos: el buque o la planta.
+  const [root] = (await db.execute(sql`
+    SELECT name, location FROM assets WHERE parent_id IS NULL ORDER BY id LIMIT 1
+  `)) as unknown as Array<{ name: string; location: string | null }>;
+
   return {
     period,
+    installation: root ?? { name: "Instalación", location: null },
     monthLabel: `${MONTHS[month]} ${year}`,
     generatedAt: new Date(),
     summary,
