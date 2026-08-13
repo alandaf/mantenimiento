@@ -15,6 +15,8 @@ const NAV = [
   { href: "/priorizacion", label: "Priorización IA", icon: "✳" },
   { href: "/causa-raiz", label: "Causa raíz", icon: "◆" },
   { href: "/activos", label: "Activos", icon: "⚙" },
+  { href: "/importar", label: "Importar Excel", icon: "↥" },
+  { href: "/reportes", label: "Reportes PDF", icon: "▣" },
 ];
 
 export default function RootLayout({
