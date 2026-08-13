@@ -6,7 +6,9 @@ import { GoogleGenAI } from "@google/genai";
  * día. Para análisis más exigentes se puede fijar `gemini-3.1-pro-preview` o
  * `gemini-2.5-pro` con GEMINI_MODEL.
  */
-export const AI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
+// `??` no sirve aquí: docker compose inyecta la variable como cadena vacía
+// cuando no está definida en .env, y "" no es null.
+export const AI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash";
 
 export class MissingApiKeyError extends Error {
   constructor() {

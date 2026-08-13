@@ -102,6 +102,7 @@ Reglas:
   Pareto para saber qué modos de falla ya duelen, y el historial de los activos que
   encabezan el ranking para confirmar si hay un patrón.
 - Una parada de línea en un activo clase A pesa más que varias incidencias menores.
+- Los montos están en soles peruanos: escríbelos como "S/ 2,800", nunca con "$".
 - Escribe para un jefe de mantenimiento con prisa: frases directas, sin relleno.
   La justificación es una o dos frases con cifras, no un párrafo.
 - Deja patron_detectado como cadena vacía si no encontraste evidencia de un patrón.`;
