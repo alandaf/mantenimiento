@@ -1,13 +1,15 @@
 # GMAO-AI · Gálvanica Operaciones Inteligentes
 
 Sistema de gestión de mantenimiento (CMMS) con KPIs de confiabilidad calculados
-sobre datos reales. **Fases 1–4 completas**: modelo de datos, CRUD de activos y
-órdenes de trabajo, motor de KPIs, dashboard, priorización asistida por IA y análisis de causa raíz.
+sobre datos reales. **Fases 1–5 completas**: modelo de datos, CRUD de activos y
+órdenes de trabajo, motor de KPIs, dashboard, priorización asistida por IA, análisis de causa raíz, importador de
+Excel y reporte mensual en PDF.
 
 ## Stack
 
 Next.js 15 (App Router, RSC + Server Actions) · TypeScript strict · Tailwind v4 ·
-Postgres 17 · Drizzle ORM · Zod · Recharts · Vitest · Gemini (`@google/genai`).
+Postgres 17 · Drizzle ORM · Zod · Recharts · Vitest · Gemini (`@google/genai`) ·
+ExcelJS · @react-pdf/renderer.
 Todo corre en Docker.
 
 ## Arrancar
@@ -127,6 +129,44 @@ consultando el historial real por function calling. Dos reglas lo mantienen hone
 Las acciones se clasifican por tipo (correctiva / preventiva / predictiva / rediseño)
 y plazo, con la instrucción explícita de atacar la causa y no el síntoma.
 
+## Importador de Excel (fase 5)
+
+`/importar` carga el histórico que hoy vive en una hoja de cálculo. El trabajo
+está en tolerar archivos reales, que nunca vienen con el formato esperado:
+
+- **Cabeceras por sinónimo**, sin distinguir mayúsculas, tildes ni símbolos:
+  «Equipo», «N° OT» y «Fecha Solicitud» se reconocen solas. Las columnas que no
+  se reconocen se ignoran sin bloquear la carga.
+- **Fechas** en serial de Excel, `dd/mm/aaaa` o ISO. **Números** como `1.234,50`
+  o `S/ 1,234.50`.
+- **Validación fila por fila.** Un importador que falla entero por una celda mala
+  es inservible: las filas válidas entran y las inválidas se listan con su motivo
+  y su número de fila del Excel, para corregirlas en el archivo original.
+- **Las mismas reglas de negocio que el formulario** — un MTTR negativo
+  envenenaría el tablero igual venga de la UI o de un Excel.
+- **Dos pasos**: validar sin importar, y luego confirmar. La inserción es
+  transaccional: o entra todo o no entra nada.
+- Los códigos ya existentes se omiten en vez de duplicarse.
+
+Hay una plantilla descargable en `/api/plantilla` con las cabeceras exactas, una
+fila de ejemplo y una hoja de instrucciones.
+
+Para ejercitar el pipeline contra un archivo deliberadamente sucio:
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env exec web pnpm tsx scripts/test-import.ts
+```
+
+## Reporte mensual en PDF (fase 5)
+
+`/reportes` genera un PDF de dos páginas por mes con datos: indicadores clave,
+distribución de OT, Pareto de fallas, activos de mayor impacto, patrones
+repetitivos y una sección de metodología que explica cómo se calcula cada
+indicador, para que quien reciba el reporte pueda auditarlo.
+
+Usa exactamente las mismas consultas que el dashboard: si la pantalla y el
+reporte divergieran, el reporte dejaría de servir para decidir.
+
 ## Estructura
 
 ```
@@ -136,7 +176,10 @@ src/
 │  ├─ activos/          CRUD + jerarquía (CTE recursiva)
 │  ├─ ordenes/          CRUD + filtros + cierre rápido
 │  ├─ priorizacion/     score determinista + análisis del modelo
-│  └─ causa-raiz/       patrones repetitivos + 5 Porqués e Ishikawa
+│  ├─ causa-raiz/       patrones repetitivos + 5 Porqués e Ishikawa
+│  ├─ importar/        carga de Excel con validación fila por fila
+│  ├─ reportes/        descarga del reporte mensual
+│  └─ api/             plantilla .xlsx y reporte .pdf
 ├─ components/          UI, gráficos, formularios
 ├─ db/schema/           Drizzle: activos, OT, modos de falla, planes, ai_insights
 └─ lib/
@@ -148,6 +191,8 @@ src/
    ├─ ai/tools.ts       herramientas de solo lectura para tool use
    ├─ ai/prioritize.ts  bucle agéntico + salida estructurada
    ├─ ai/rca.ts         5 Porqués + Ishikawa con evidencia declarada
+   ├─ import/           parser de Excel + validación — puro + tests
+   ├─ report/           datos y maquetación del PDF mensual
    ├─ actions/          Server Actions
    └─ validation.ts     esquemas Zod compartidos
 ```
@@ -160,4 +205,5 @@ src/
       y bitácora auditable en `ai_insights`
 - [x] **F4** Detección de fallas repetitivas y análisis de causa raíz
       (5 Porqués + Ishikawa) con evidencia e hipótesis diferenciadas
-- [ ] **F5** Importador de Excel, exportación PDF y despliegue al VPS
+- [x] **F5** Importador de Excel y reporte mensual en PDF
+- [ ] **F6** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)

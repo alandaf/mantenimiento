@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "@google/genai": "^2.16.0",
+    "@react-pdf/renderer": "^4.6.0",
     "drizzle-orm": "^0.38.3",
+    "exceljs": "^4.4.0",
     "next": "^15.1.6",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
