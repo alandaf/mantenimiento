@@ -13,6 +13,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: "▦" },
   { href: "/ordenes", label: "Órdenes de trabajo", icon: "▤" },
   { href: "/priorizacion", label: "Priorización IA", icon: "✳" },
+  { href: "/causa-raiz", label: "Causa raíz", icon: "◆" },
   { href: "/activos", label: "Activos", icon: "⚙" },
 ];
 
@@ -45,9 +46,9 @@ export default function RootLayout({
 
             <div className="m-3 rounded-lg border border-ink-800 bg-ink-850 p-3">
               <p className="text-[11px] leading-relaxed text-ink-400">
-                <span className="font-semibold text-ink-300">Análisis de causa raíz</span>
+                <span className="font-semibold text-ink-300">Importar Excel</span>
                 <br />
-                Disponible en la fase 4.
+                Disponible en la fase 5.
               </p>
             </div>
           </aside>
