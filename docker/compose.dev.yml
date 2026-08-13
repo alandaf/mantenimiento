@@ -28,6 +28,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-gmao}:${POSTGRES_PASSWORD:-gmao}@db:5432/${POSTGRES_DB:-gmao}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-}
+      APP_LOCALE: ${APP_LOCALE:-}
+      APP_CURRENCY: ${APP_CURRENCY:-}
     volumes:
       # Bind mount del código para HMR...
       - ..:/app

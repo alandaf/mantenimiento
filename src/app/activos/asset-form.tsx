@@ -11,6 +11,7 @@ import {
   Textarea,
   toDateInput,
 } from "@/components/form";
+import { CURRENCY_SYMBOL } from "@/lib/config";
 import type { Asset } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
@@ -97,7 +98,7 @@ export function AssetForm({
             />
           </Field>
           <Field
-            label="Costo de parada por hora (S/)"
+            label={`Costo de parada por hora (${CURRENCY_SYMBOL})`}
             name="downtimeCostPerHour"
             errors={state.errors}
             hint="Alimenta la priorización de OT en la fase 3"

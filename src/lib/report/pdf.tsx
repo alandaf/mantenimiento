@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
+import { longDateTimeFmt, money } from "@/lib/config";
 import type { MonthlyReport } from "./monthly";
 
 /**
@@ -106,12 +107,6 @@ const s = StyleSheet.create({
   },
 });
 
-const money = new Intl.NumberFormat("es-PE", {
-  style: "currency",
-  currency: "PEN",
-  maximumFractionDigits: 0,
-});
-
 const TREND_LABEL: Record<string, string> = {
   acelerando: "Acelerando",
   estable: "Estable",
@@ -149,10 +144,7 @@ function Cell({
 
 export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
   const f = data.formatted;
-  const fmtDate = new Intl.DateTimeFormat("es-PE", {
-    dateStyle: "long",
-    timeStyle: "short",
-  });
+  const fmtDate = longDateTimeFmt;
 
   return (
     <Document
