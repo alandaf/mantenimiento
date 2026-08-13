@@ -1,8 +1,8 @@
 # GMAO-AI · Gálvanica Operaciones Inteligentes
 
 Sistema de gestión de mantenimiento (CMMS) con KPIs de confiabilidad calculados
-sobre datos reales. **Fases 1–3 completas**: modelo de datos, CRUD de activos y
-órdenes de trabajo, motor de KPIs, dashboard y priorización asistida por IA.
+sobre datos reales. **Fases 1–4 completas**: modelo de datos, CRUD de activos y
+órdenes de trabajo, motor de KPIs, dashboard, priorización asistida por IA y análisis de causa raíz.
 
 ## Stack
 
@@ -103,6 +103,30 @@ de entrada — trazable de punta a punta.
 Sin `GEMINI_API_KEY` la aplicación funciona igual y el score determinista sigue
 visible; solo se deshabilita el botón de análisis.
 
+## Análisis de causa raíz (fase 4)
+
+La página `/causa-raiz` sigue la misma separación de capas que F3.
+
+**Detección determinista.** Un patrón es el mismo modo de falla reincidiendo en el
+mismo activo. Lo relevante no es solo la frecuencia sino **si los intervalos se
+acortan**: un equipo que falla cada 90, 60 y luego 30 días se está degradando.
+[recurrence.ts](src/lib/kpi/recurrence.ts) calcula intervalos, tendencia,
+cronicidad y prioridad — funciones puras con 18 tests.
+
+La tendencia exige al menos 4 eventos (3 intervalos). Con menos devuelve
+`indeterminada` en vez de fingir una pendiente sobre ruido.
+
+**Análisis con IA.** Sobre cada patrón, el modelo produce 5 Porqués e Ishikawa (6M)
+consultando el historial real por function calling. Dos reglas lo mantienen honesto:
+
+- Cada eslabón de los 5 Porqués lleva su evidencia, y si no la tiene debe marcarse
+  como `hipótesis: falta evidencia`. La UI las distingue visualmente (⚠ vs ✓).
+- La confianza la determinan los datos, no lo redondo del razonamiento. El modelo
+  además declara qué habría que registrar para cerrar el análisis.
+
+Las acciones se clasifican por tipo (correctiva / preventiva / predictiva / rediseño)
+y plazo, con la instrucción explícita de atacar la causa y no el síntoma.
+
 ## Estructura
 
 ```
@@ -111,15 +135,19 @@ src/
 │  ├─ dashboard/        KPIs, tendencia, Pareto, malos actores
 │  ├─ activos/          CRUD + jerarquía (CTE recursiva)
 │  ├─ ordenes/          CRUD + filtros + cierre rápido
-│  └─ priorizacion/     score determinista + análisis del modelo
+│  ├─ priorizacion/     score determinista + análisis del modelo
+│  └─ causa-raiz/       patrones repetitivos + 5 Porqués e Ishikawa
 ├─ components/          UI, gráficos, formularios
 ├─ db/schema/           Drizzle: activos, OT, modos de falla, planes, ai_insights
 └─ lib/
    ├─ kpi/formulas.ts   MTTR, MTBF, disponibilidad, Pareto — puras + tests
    ├─ kpi/risk.ts       score de riesgo de OT — puro + tests
+   ├─ kpi/recurrence.ts intervalos, tendencia y cronicidad — puro + tests
+   ├─ kpi/patterns.ts   detección de fallas repetitivas en SQL
    ├─ kpi/queries.ts    agregación en SQL
    ├─ ai/tools.ts       herramientas de solo lectura para tool use
    ├─ ai/prioritize.ts  bucle agéntico + salida estructurada
+   ├─ ai/rca.ts         5 Porqués + Ishikawa con evidencia declarada
    ├─ actions/          Server Actions
    └─ validation.ts     esquemas Zod compartidos
 ```
@@ -130,5 +158,6 @@ src/
 - [x] **F2** Motor de KPIs y dashboard
 - [x] **F3** Priorización de OT con Gemini vía *function calling*, con score determinista
       y bitácora auditable en `ai_insights`
-- [ ] **F4** Análisis de causa raíz y detección de fallas repetitivas
+- [x] **F4** Detección de fallas repetitivas y análisis de causa raíz
+      (5 Porqués + Ishikawa) con evidencia e hipótesis diferenciadas
 - [ ] **F5** Importador de Excel, exportación PDF y despliegue al VPS
