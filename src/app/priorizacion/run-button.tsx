@@ -12,7 +12,7 @@ export function RunButton({ hasKey }: { hasKey: boolean }) {
       <button
         type="button"
         disabled={pending || !hasKey}
-        title={hasKey ? undefined : "Configura ANTHROPIC_API_KEY en .env"}
+        title={hasKey ? undefined : "Configura GEMINI_API_KEY en .env"}
         onClick={() =>
           startTransition(async () => {
             setState(null);

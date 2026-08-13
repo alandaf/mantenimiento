@@ -36,16 +36,16 @@ export default async function PrioritizacionPage() {
     <>
       <PageHeader
         title="Priorización asistida por IA"
-        subtitle={`${orders.length} órdenes abiertas · score determinista + análisis de Claude`}
+        subtitle={`${orders.length} órdenes abiertas · score determinista + análisis de Gemini`}
         actions={<RunButton hasKey={keyPresent} />}
       />
 
       <div className="space-y-5 p-6">
         {!keyPresent && (
           <div className="rounded-lg border border-warn-500/30 bg-warn-500/10 px-4 py-3 text-sm text-warn-500">
-            Falta <code className="font-mono">ANTHROPIC_API_KEY</code> en{" "}
+            Falta <code className="font-mono">GEMINI_API_KEY</code> en{" "}
             <code className="font-mono">.env</code>. El score determinista de abajo ya
-            funciona; el análisis de Claude se activa al configurar la clave y reiniciar
+            funciona; el análisis de Gemini se activa al configurar la clave y reiniciar
             el contenedor <code className="font-mono">web</code>.
           </div>
         )}

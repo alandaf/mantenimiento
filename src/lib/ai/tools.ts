@@ -1,4 +1,3 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { lastDays } from "@/lib/kpi/period";
@@ -157,16 +156,21 @@ async function getAssetContext(assetTag: string) {
   return row ?? { error: `No existe un activo con tag ${assetTag}` };
 }
 
-/** Definiciones que ve el modelo. Las descripciones dicen cuándo usar cada una. */
-export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
+/**
+ * Definiciones que ve el modelo, en el formato de function calling de Gemini.
+ * Las descripciones dicen *cuándo* usar cada herramienta, no solo qué hace:
+ * es lo que más influye en que el modelo la invoque en el momento correcto.
+ */
+export const TOOL_DEFINITIONS = [
   {
+    type: "function" as const,
     name: "get_kpis",
     description:
       "Indicadores de mantenimiento del periodo: MTTR, MTBF, disponibilidad, " +
       "cumplimiento del plan preventivo, proporción de trabajo reactivo, backlog y costo. " +
       "Todos calculados en SQL sobre los datos reales. Úsala para situar la priorización " +
       "en el contexto operativo de la planta antes de decidir el orden.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         days: {
@@ -178,12 +182,13 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
   {
+    type: "function" as const,
     name: "get_failure_pareto",
     description:
       "Pareto de modos de falla por horas de parada acumuladas en el periodo, con el " +
       "porcentaje de cada uno y cuáles forman el 80% del impacto. Úsala para saber si la " +
       "falla de una OT pertenece a un patrón repetitivo que ya está costando caro.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         days: {
@@ -195,12 +200,13 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
   {
+    type: "function" as const,
     name: "get_asset_context",
     description:
       "Ficha de un activo: criticidad, ubicación, fabricante, costo de parada por hora, " +
       "activo padre y estado de sus planes preventivos (cuántos hay y cuántos vencidos). " +
       "Úsala cuando necesites entender por qué un activo concreto importa.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         asset_tag: {
@@ -212,12 +218,13 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
   {
+    type: "function" as const,
     name: "get_asset_history",
     description:
       "Historial de órdenes de trabajo de un activo: fechas, modos de falla, minutos de " +
       "parada y costo. Úsala para verificar si una falla se repite y con qué frecuencia, " +
       "antes de afirmar que hay un patrón.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         asset_tag: { type: "string", description: "Tag del activo." },

@@ -1,4 +1,3 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { db } from "@/db";
 import { aiInsights } from "@/db/schema";
@@ -8,7 +7,6 @@ import { executeTool, getOpenWorkOrders, TOOL_DEFINITIONS } from "./tools";
 /** Esquema exacto que debe devolver el modelo. */
 const OUTPUT_SCHEMA = {
   type: "object",
-  additionalProperties: false,
   properties: {
     resumen: {
       type: "string",
@@ -20,7 +18,6 @@ const OUTPUT_SCHEMA = {
       description: "Órdenes ordenadas de mayor a menor urgencia real.",
       items: {
         type: "object",
-        additionalProperties: false,
         properties: {
           code: { type: "string", description: "Código de la OT, ej. OT-2026-0042." },
           posicion: { type: "integer", description: "Posición en el ranking, desde 1." },
@@ -39,9 +36,9 @@ const OUTPUT_SCHEMA = {
             description: "La siguiente acción concreta, en una frase.",
           },
           patron_detectado: {
-            type: ["string", "null"],
+            type: "string",
             description:
-              "Patrón de falla repetitiva detectado en el historial, o null si no hay evidencia de uno.",
+              "Patrón de falla repetitiva detectado en el historial. Cadena vacía si no hay evidencia de uno.",
           },
         },
         required: [
@@ -73,7 +70,11 @@ const outputSchema = z.object({
       score_ajustado: z.number(),
       justificacion: z.string(),
       accion_recomendada: z.string(),
-      patron_detectado: z.string().nullable(),
+      // Gemini no admite tipos nulables en el esquema: se normaliza aquí.
+      patron_detectado: z
+        .string()
+        .transform((v) => (v.trim() === "" ? null : v))
+        .nullable(),
     }),
   ),
   alertas: z.array(z.string()),
@@ -102,20 +103,23 @@ Reglas:
   encabezan el ranking para confirmar si hay un patrón.
 - Una parada de línea en un activo clase A pesa más que varias incidencias menores.
 - Escribe para un jefe de mantenimiento con prisa: frases directas, sin relleno.
-  La justificación es una o dos frases con cifras, no un párrafo.`;
+  La justificación es una o dos frases con cifras, no un párrafo.
+- Deja patron_detectado como cadena vacía si no encontraste evidencia de un patrón.`;
 
 const MAX_ITERATIONS = 12;
 
 export type PrioritizationRun = {
   result: Prioritization;
   toolCalls: string[];
-  usage: { input: number; output: number };
   model: string;
 };
 
 /**
- * Ejecuta el bucle agéntico: el modelo consulta las herramientas que necesite y
- * termina devolviendo el ranking en el esquema estructurado.
+ * Bucle agéntico sobre la API `interactions` de Gemini: el modelo pide las
+ * herramientas que necesite y termina devolviendo el ranking estructurado.
+ *
+ * El estado de la conversación lo mantiene el servidor mediante
+ * `previous_interaction_id`, así que no reenviamos el historial en cada vuelta.
  */
 export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
   const client = getClient();
@@ -129,108 +133,85 @@ export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
         alertas: [],
       },
       toolCalls: [],
-      usage: { input: 0, output: 0 },
       model: AI_MODEL,
     };
   }
 
-  const messages: Anthropic.MessageParam[] = [
-    {
-      role: "user",
-      content:
-        `Estas son las ${openOrders.length} órdenes de trabajo abiertas, con su score ` +
-        `de riesgo determinista ya calculado:\n\n` +
-        JSON.stringify(openOrders, null, 2) +
-        `\n\nInvestiga con las herramientas y devuelve el ranking priorizado para hoy.`,
+  const baseRequest = {
+    model: AI_MODEL,
+    system_instruction: SYSTEM_PROMPT,
+    tools: TOOL_DEFINITIONS,
+    response_format: {
+      type: "text",
+      mime_type: "application/json",
+      schema: OUTPUT_SCHEMA,
     },
-  ];
+  };
 
   const toolCalls: string[] = [];
-  let inputTokens = 0;
-  let outputTokens = 0;
+
+  let interaction = await client.interactions.create({
+    ...baseRequest,
+    input:
+      `Estas son las ${openOrders.length} órdenes de trabajo abiertas, con su score ` +
+      `de riesgo determinista ya calculado:\n\n` +
+      JSON.stringify(openOrders, null, 2) +
+      `\n\nInvestiga con las herramientas y devuelve el ranking priorizado para hoy.`,
+  });
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 16000,
-      thinking: { type: "adaptive" },
-      output_config: {
-        effort: "high",
-        format: {
-          type: "json_schema",
-          schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
-        },
-      },
-      system: SYSTEM_PROMPT,
-      tools: TOOL_DEFINITIONS,
-      messages,
-    });
+    const pending = (interaction.steps ?? []).filter(
+      (s) => s.type === "function_call",
+    );
+    if (pending.length === 0) break;
 
-    inputTokens += response.usage.input_tokens;
-    outputTokens += response.usage.output_tokens;
-
-    if (response.stop_reason === "refusal") {
-      throw new Error("El modelo declinó la solicitud de priorización.");
-    }
-
-    if (response.stop_reason === "tool_use") {
-      messages.push({ role: "assistant", content: response.content });
-
-      const results: Anthropic.ToolResultBlockParam[] = [];
-      for (const block of response.content) {
-        if (block.type !== "tool_use") continue;
-        toolCalls.push(block.name);
-        try {
-          const data = await executeTool(
-            block.name,
-            block.input as Record<string, unknown>,
-          );
-          results.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: JSON.stringify(data),
-          });
-        } catch (err) {
-          results.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            is_error: true,
-            content: err instanceof Error ? err.message : String(err),
-          });
-        }
+    const results = [];
+    for (const step of pending) {
+      toolCalls.push(step.name);
+      try {
+        const payload = await executeTool(step.name, step.arguments);
+        results.push({
+          type: "function_result" as const,
+          name: step.name,
+          call_id: step.id,
+          result: JSON.stringify(payload),
+        });
+      } catch (err) {
+        // is_error se lo dice al modelo explícitamente, en vez de disfrazar el
+        // fallo como un resultado válido y dejar que razone sobre datos falsos.
+        results.push({
+          type: "function_result" as const,
+          name: step.name,
+          call_id: step.id,
+          is_error: true,
+          result: err instanceof Error ? err.message : String(err),
+        });
       }
-
-      messages.push({ role: "user", content: results });
-      continue;
     }
 
-    // Turno final: la salida estructurada llega como texto que cumple el esquema.
-    const text = response.content.find((b) => b.type === "text")?.text;
-    if (!text) {
-      throw new Error("El modelo no devolvió la priorización estructurada.");
-    }
-
-    const result = outputSchema.parse(JSON.parse(text));
-
-    await db.insert(aiInsights).values({
-      scope: "priorizacion",
-      model: AI_MODEL,
-      prompt: SYSTEM_PROMPT,
-      inputData: { openOrders, toolCalls },
-      output: result,
-      tokensIn: inputTokens,
-      tokensOut: outputTokens,
+    interaction = await client.interactions.create({
+      ...baseRequest,
+      previous_interaction_id: interaction.id,
+      input: results,
     });
-
-    return {
-      result,
-      toolCalls,
-      usage: { input: inputTokens, output: outputTokens },
-      model: AI_MODEL,
-    };
   }
 
-  throw new Error(
-    `La priorización no concluyó en ${MAX_ITERATIONS} iteraciones. Revisa las herramientas.`,
-  );
+  const text = interaction.output_text;
+  if (!text) {
+    throw new Error(
+      "El modelo no devolvió la priorización estructurada. Puede haber agotado las iteraciones.",
+    );
+  }
+
+  const result = outputSchema.parse(JSON.parse(text));
+
+  await db.insert(aiInsights).values({
+    scope: "priorizacion",
+    model: AI_MODEL,
+    prompt: SYSTEM_PROMPT,
+    inputData: { openOrders, toolCalls },
+    output: result,
+  });
+
+  return { result, toolCalls, model: AI_MODEL };
 }
