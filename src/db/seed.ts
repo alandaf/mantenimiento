@@ -170,7 +170,7 @@ async function seed(dataset: SeedDataset) {
   }
 
   console.log("→ Planes preventivos…");
-  await db.insert(pmPlans).values(
+  const insertedPlans = await db.insert(pmPlans).values(
     equipmentRows.flatMap(({ row, profile }) => {
       const count =
         profile.criticality === "A" ? 3 : profile.criticality === "B" ? 2 : 1;
@@ -215,7 +215,15 @@ async function seed(dataset: SeedDataset) {
           };
         });
     }),
-  );
+  ).returning();
+
+  /** Planes por activo, para vincular cada preventiva a la rutina que la originó. */
+  const plansByAsset = new Map<number, typeof insertedPlans>();
+  for (const plan of insertedPlans) {
+    const list = plansByAsset.get(plan.assetId) ?? [];
+    list.push(plan);
+    plansByAsset.set(plan.assetId, list);
+  }
 
   console.log("→ Órdenes de trabajo (12 meses)…");
   const horizonMs = now.getTime() - horizonStart.getTime();
@@ -297,6 +305,8 @@ async function seed(dataset: SeedDataset) {
       const reportedAt = new Date(horizonStart.getTime() + day * 86_400_000);
       if (reportedAt > now) break;
       const complied = rand() < 0.85;
+      const assetPlans = plansByAsset.get(row.id) ?? [];
+      const originPlan = assetPlans.length > 0 ? pick(assetPlans) : null;
       const durationHours = 1.5 + rand() * 4;
       const startedAt = new Date(reportedAt.getTime() + rand() * 12 * 3_600_000);
       const tech = pick(fieldTechs);
@@ -309,8 +319,9 @@ async function seed(dataset: SeedDataset) {
           ? "cerrada"
           : weighted([["anulada", 2], ["abierta", 1]] as const),
         priority: 3,
-        title: `${pick(dataset.pmTemplates).name} — ${row.tag}`,
+        title: `${originPlan ? originPlan.name : pick(dataset.pmTemplates).name} — ${row.tag}`,
         description: "Ejecución de rutina del plan de mantenimiento preventivo.",
+        pmPlanId: originPlan?.id ?? null,
         assignedTo: tech.id,
         reportedAt,
         startedAt: complied ? startedAt : null,

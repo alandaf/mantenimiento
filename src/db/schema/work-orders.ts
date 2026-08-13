@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { assets } from "./assets";
 import { failureModes } from "./failure-modes";
+import { pmPlans } from "./pm-plans";
 import { technicians } from "./technicians";
 import { woStatusEnum, woTypeEnum } from "./enums";
 
@@ -42,6 +43,14 @@ export const workOrders = pgTable(
     description: text("description"),
 
     failureModeId: integer("failure_mode_id").references(() => failureModes.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Plan preventivo que originó esta orden. Al cerrarla se avanza la cadencia
+     * del plan; sin este vínculo habría que adivinar por nombre y activo, que
+     * falla en cuanto dos rutinas se parecen.
+     */
+    pmPlanId: integer("pm_plan_id").references(() => pmPlans.id, {
       onDelete: "set null",
     }),
     assignedTo: integer("assigned_to").references(() => technicians.id, {
@@ -80,6 +89,7 @@ export const workOrders = pgTable(
     typeIdx: index("wo_type_idx").on(t.type),
     reportedIdx: index("wo_reported_idx").on(t.reportedAt),
     failureModeIdx: index("wo_failure_mode_idx").on(t.failureModeId),
+    pmPlanIdx: index("wo_pm_plan_idx").on(t.pmPlanId),
   }),
 );
 

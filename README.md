@@ -120,6 +120,12 @@ Decisiones que evitan cifras falsas:
 - **Vencida por horas es un hecho, no una proyección**: no depende de conocer el
   ritmo.
 
+Al cerrar una orden preventiva, el plan que la originó se reprograma en la misma
+transacción que el cierre — una rutina que no avanza deja el tablero mintiendo
+desde el primer cierre. La cadencia se cuenta desde la lectura de horómetro
+**vigente al cerrar**, no la de hoy: si la orden se registra con retraso, avanzar
+sobre la lectura actual regalaría horas de la cadencia.
+
 ## Cómo se calculan los KPIs
 
 Los indicadores **no** son estimaciones ni salidas de un modelo: se agregan en
