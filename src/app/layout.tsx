@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GMAO-AI · Gálvanica Operaciones Inteligentes",
+  title: {
+    default: "PMS SIMARP",
+    template: "%s · PMS SIMARP",
+  },
   description:
-    "Gestión de mantenimiento con KPIs de confiabilidad calculados sobre datos reales.",
+    "Planned Maintenance System: mantenimiento por horas de marcha, KPIs de confiabilidad y análisis de causa raíz.",
 };
 
 /**

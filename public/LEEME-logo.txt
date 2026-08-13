@@ -1,0 +1,12 @@
+Coloca aquí el logo con uno de estos nombres:
+
+  simarp-logo.svg    (preferido: escala sin perder nitidez)
+  simarp-logo.png
+  simarp-logo.webp
+
+La aplicación lo detecta sola al arrancar. Mientras no exista, muestra un
+monograma "SP" en su lugar — así nunca aparece un icono roto.
+
+Para el favicon, guarda además el archivo como:
+
+  src/app/icon.png     (Next.js lo sirve automáticamente)

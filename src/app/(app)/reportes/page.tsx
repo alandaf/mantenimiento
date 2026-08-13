@@ -3,7 +3,7 @@ import { EmptyState, PageHeader, Panel } from "@/components/ui";
 import { getAvailableMonths } from "@/lib/report/monthly";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Reportes · GMAO-AI" };
+export const metadata = { title: "Reportes" };
 
 export default async function ReportesPage() {
   const months = await getAvailableMonths();

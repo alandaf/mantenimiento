@@ -149,7 +149,7 @@ export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
   return (
     <Document
       title={`Reporte de mantenimiento — ${data.monthLabel}`}
-      author="GMAO-AI"
+      author="SIMARP"
     >
       <Page size="A4" style={s.page}>
         <View style={s.header} fixed>
@@ -160,8 +160,10 @@ export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
             </Text>
           </View>
           <View>
-            <Text style={s.org}>GÁLVANICA</Text>
-            <Text style={s.orgSub}>Operaciones Inteligentes</Text>
+            <Text style={s.org}>{data.installation.name}</Text>
+            {data.installation.location && (
+              <Text style={s.orgSub}>{data.installation.location}</Text>
+            )}
           </View>
         </View>
 
@@ -277,7 +279,9 @@ export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
         </Text>
 
         <View style={s.footer} fixed>
-          <Text>Generado el {fmtDate.format(data.generatedAt)}</Text>
+          <Text>
+            Generado el {fmtDate.format(data.generatedAt)} · PMS SIMARP
+          </Text>
           <Text
             render={({ pageNumber, totalPages }) =>
               `Página ${pageNumber} de ${totalPages}`
@@ -295,8 +299,10 @@ export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
             </Text>
           </View>
           <View>
-            <Text style={s.org}>GÁLVANICA</Text>
-            <Text style={s.orgSub}>Operaciones Inteligentes</Text>
+            <Text style={s.org}>{data.installation.name}</Text>
+            {data.installation.location && (
+              <Text style={s.orgSub}>{data.installation.location}</Text>
+            )}
           </View>
         </View>
 
@@ -394,7 +400,9 @@ export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
         </Text>
 
         <View style={s.footer} fixed>
-          <Text>Generado el {fmtDate.format(data.generatedAt)}</Text>
+          <Text>
+            Generado el {fmtDate.format(data.generatedAt)} · PMS SIMARP
+          </Text>
           <Text
             render={({ pageNumber, totalPages }) =>
               `Página ${pageNumber} de ${totalPages}`

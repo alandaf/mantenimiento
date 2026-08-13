@@ -16,7 +16,7 @@ export async function GET() {
   if (response) return response;
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "GMAO-AI";
+  wb.creator = "SIMARP";
   wb.created = new Date();
 
   const sheet = wb.addWorksheet("Órdenes de trabajo");

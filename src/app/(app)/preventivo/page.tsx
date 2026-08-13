@@ -4,7 +4,7 @@ import { dateFmt } from "@/lib/config";
 import { getPmPlanStatuses } from "@/lib/kpi/meter-queries";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Plan preventivo · GMAO-AI" };
+export const metadata = { title: "Plan preventivo" };
 
 const TRIGGER_LABEL: Record<string, string> = {
   calendario: "Calendario",

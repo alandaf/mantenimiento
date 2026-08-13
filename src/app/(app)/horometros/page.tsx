@@ -5,7 +5,7 @@ import { getAssetMeters } from "@/lib/kpi/meter-queries";
 import { ReadingForm } from "./reading-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Horómetros · GMAO-AI" };
+export const metadata = { title: "Horómetros" };
 
 /** Una lectura vieja hace que el ritmo proyectado deje de ser confiable. */
 const STALE_DAYS = 30;

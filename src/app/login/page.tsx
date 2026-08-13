@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
+import { BRAND, BrandMark } from "@/components/brand";
 import { getSession } from "@/lib/session";
 import { LoginForm } from "./login-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Acceso · GMAO-AI" };
+export const metadata = { title: "Acceso" };
 
 export default async function LoginPage() {
   // Quien ya tiene sesión no debe ver el formulario.
@@ -13,12 +14,10 @@ export default async function LoginPage() {
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-7 flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-brand-500 text-xl font-bold">
-            G
-          </span>
+          <BrandMark size={44} />
           <div className="leading-tight">
-            <p className="text-base font-bold tracking-wide">GMAO-AI</p>
-            <p className="text-[11px] text-ink-400">Gálvanica · Operaciones Inteligentes</p>
+            <p className="text-base font-bold tracking-wide">{BRAND.product}</p>
+            <p className="text-[11px] text-ink-400">{BRAND.tagline}</p>
           </div>
         </div>
 
