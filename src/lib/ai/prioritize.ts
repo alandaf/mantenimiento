@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/db";
-import { CURRENCY_EXAMPLE, CURRENCY_NAME } from "@/lib/config";
+import { getFormatters } from "@/lib/config";
 import { aiInsights } from "@/db/schema";
 import { AI_MODEL, getClient } from "./client";
 import { executeTool, getOpenWorkOrders, TOOL_DEFINITIONS } from "./tools";
@@ -83,7 +83,7 @@ const outputSchema = z.object({
 
 export type Prioritization = z.infer<typeof outputSchema>;
 
-const SYSTEM_PROMPT = `Eres el planificador de mantenimiento de una planta de galvanizado.
+const buildSystemPrompt = (currencyName: string, currencyExample: string) => `Eres el planificador de mantenimiento de una planta de galvanizado.
 Tu tarea es priorizar las órdenes de trabajo abiertas para el turno de hoy.
 
 Cada OT llega con un score de riesgo ya calculado de forma determinista a partir de
@@ -103,7 +103,7 @@ Reglas:
   Pareto para saber qué modos de falla ya duelen, y el historial de los activos que
   encabezan el ranking para confirmar si hay un patrón.
 - Una parada de línea en un activo clase A pesa más que varias incidencias menores.
-- Los montos están en ${CURRENCY_NAME}: escríbelos con el formato ${CURRENCY_EXAMPLE}.
+- Los montos están en ${currencyName}: escríbelos con el formato ${currencyExample}.
 - Escribe para un jefe de mantenimiento con prisa: frases directas, sin relleno.
   La justificación es una o dos frases con cifras, no un párrafo.
 - Deja patron_detectado como cadena vacía si no encontraste evidencia de un patrón.`;
@@ -124,6 +124,8 @@ export type PrioritizationRun = {
  * `previous_interaction_id`, así que no reenviamos el historial en cada vuelta.
  */
 export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
+  const { currencyName, currencyExample } = await getFormatters();
+  const SYSTEM_PROMPT = buildSystemPrompt(currencyName, currencyExample);
   const client = getClient();
   const openOrders = await getOpenWorkOrders();
 

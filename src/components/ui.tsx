@@ -170,7 +170,3 @@ export function EmptyState({ message }: { message: string }) {
     <div className="px-5 py-12 text-center text-sm text-ink-400">{message}</div>
   );
 }
-
-// Reexportados desde la configuración regional: la moneda y el locale se
-// definen en un único sitio (src/lib/config.ts).
-export { dateFmt, dateTimeFmt, money } from "@/lib/config";

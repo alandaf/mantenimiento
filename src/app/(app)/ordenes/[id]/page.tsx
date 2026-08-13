@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui";
 import { db } from "@/db";
@@ -14,6 +15,7 @@ export default async function EditWorkOrderPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { currencySymbol } = await getFormatters();
   const { id: rawId } = await params;
   const id = Number(rawId);
   if (!Number.isInteger(id)) notFound();
@@ -29,7 +31,7 @@ export default async function EditWorkOrderPage({
   return (
     <>
       <PageHeader title={workOrder.code} subtitle={workOrder.title} />
-      <WorkOrderForm action={action} workOrder={workOrder} {...catalogs} />
+      <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
     </>
   );
 }

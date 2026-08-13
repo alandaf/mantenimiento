@@ -92,17 +92,20 @@ docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env e
 
 ## Configuración regional
 
-La moneda y el locale se definen en `.env` y se leen en un solo sitio
-([config.ts](src/lib/config.ts)):
+La moneda, el formato regional y el nombre de la instalación viven **en base de
+datos**, no en variables de entorno: el administrador los cambia desde
+`/configuracion` sin acceso al servidor y sin reiniciar nada. Las variables de
+entorno solo aportan los valores iniciales del primer arranque.
 
-```
-APP_LOCALE=es-CL
-APP_CURRENCY=CLP
-```
+Alcanza a la interfaz, el PDF, las etiquetas de formulario y las instrucciones
+que recibe el modelo. Las monedas sin subunidad de uso corriente (CLP, JPY,
+COP…) se formatean sin decimales automáticamente.
 
-Alcanza a la interfaz, el PDF, las etiquetas de formulario y los prompts del
-modelo. Las monedas sin subunidad de uso corriente (CLP, JPY, COP…) se formatean
-sin decimales automáticamente.
+La lectura se memoiza por petición con `cache()` de React: aunque diez
+componentes pidan el formateador, la base se consulta una vez.
+
+> Cambiar la moneda **reformatea** los montos, no los convierte. La interfaz lo
+> advierte, porque es un malentendido fácil y caro.
 
 ## Sets de datos
 

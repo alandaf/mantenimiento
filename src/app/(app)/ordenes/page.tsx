@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import Link from "next/link";
 import {
   Badge,
@@ -7,7 +8,6 @@ import {
   PageHeader,
   Panel,
   PriorityTag,
-  dateFmt,
 } from "@/components/ui";
 import { db } from "@/db";
 import { formatHours } from "@/lib/kpi/formulas";
@@ -54,6 +54,7 @@ export default async function WorkOrdersPage({
 }: {
   searchParams: Promise<{ estado?: string; tipo?: string; activo?: string; p?: string }>;
 }) {
+  const { dateFmt } = await getFormatters();
   const params = await searchParams;
   const page = Math.max(1, Number(params.p) || 1);
   const offset = (page - 1) * PAGE_SIZE;

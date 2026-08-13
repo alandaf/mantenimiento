@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { getFormatters } from "@/lib/config";
 import { Badge, EmptyState, KpiCard, PageHeader, Panel } from "@/components/ui";
-import { dateFmt } from "@/lib/config";
 import { getPmPlanStatuses } from "@/lib/kpi/meter-queries";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,7 @@ const TRIGGER_LABEL: Record<string, string> = {
 };
 
 export default async function PreventivoPage() {
+  const { dateFmt } = await getFormatters();
   const plans = await getPmPlanStatuses();
 
   const overdue = plans.filter((p) => p.status.overdue);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getFormatters } from "@/lib/config";
 import { AvailabilityTrend, ParetoChart, WorkOrderMix } from "@/components/charts";
 import {
   Badge,
@@ -6,7 +7,6 @@ import {
   KpiCard,
   PageHeader,
   Panel,
-  money,
 } from "@/components/ui";
 import { formatHours, toPercent } from "@/lib/kpi/formulas";
 import { formatPeriod, lastDays } from "@/lib/kpi/period";
@@ -32,6 +32,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ rango?: string }>;
 }) {
+  const { money } = await getFormatters();
   const params = await searchParams;
   const days = RANGES.some((r) => String(r.days) === params.rango)
     ? Number(params.rango)

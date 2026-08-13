@@ -1,4 +1,5 @@
 import { asc, eq, ne } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui";
 import { db } from "@/db";
@@ -13,6 +14,7 @@ export default async function EditAssetPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { currencySymbol } = await getFormatters();
   const { id: rawId } = await params;
   const id = Number(rawId);
   if (!Number.isInteger(id)) notFound();
@@ -32,7 +34,7 @@ export default async function EditAssetPage({
   return (
     <>
       <PageHeader title={asset.name} subtitle={`${asset.tag} · editar ficha`} />
-      <AssetForm action={action} asset={asset} parents={parents} />
+      <AssetForm currencySymbol={currencySymbol} action={action} asset={asset} parents={parents} />
     </>
   );
 }

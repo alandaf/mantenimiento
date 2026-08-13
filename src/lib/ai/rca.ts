@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/db";
-import { CURRENCY_EXAMPLE, CURRENCY_NAME } from "@/lib/config";
+import { getFormatters } from "@/lib/config";
 import { aiInsights } from "@/db/schema";
 import { getFailurePattern, type FailurePattern } from "@/lib/kpi/patterns";
 import { AI_MODEL, getClient } from "./client";
@@ -142,7 +142,7 @@ const outputSchema = z.object({
 
 export type RootCauseAnalysis = z.infer<typeof outputSchema>;
 
-const SYSTEM_PROMPT = `Eres un ingeniero de confiabilidad haciendo un análisis de causa raíz
+const buildSystemPrompt = (currencyName: string, currencyExample: string) => `Eres un ingeniero de confiabilidad haciendo un análisis de causa raíz
 sobre una falla que se repite en un activo concreto.
 
 Aplicas dos herramientas clásicas:
@@ -162,7 +162,7 @@ Reglas que no puedes romper:
   solo hay dos ocurrencias y ningún dato de condición, la confianza es baja.
 - Las acciones deben atacar la causa, no el síntoma. "Cambiar el rodamiento" es tratar
   el síntoma; "corregir la desalineación que destruye el rodamiento" es atacar la causa.
-- Los montos están en ${CURRENCY_NAME}: escríbelos con el formato ${CURRENCY_EXAMPLE}.
+- Los montos están en ${currencyName}: escríbelos con el formato ${currencyExample}.
 - Escribe para un ingeniero de mantenimiento: preciso y sin relleno.`;
 
 const MAX_ITERATIONS = 10;
@@ -175,6 +175,8 @@ export type RcaRun = {
 };
 
 export async function analyzeRootCause(patternKey: string): Promise<RcaRun> {
+  const { currencyName, currencyExample } = await getFormatters();
+  const SYSTEM_PROMPT = buildSystemPrompt(currencyName, currencyExample);
   const client = getClient();
   const pattern = await getFailurePattern(patternKey);
   if (!pattern) {

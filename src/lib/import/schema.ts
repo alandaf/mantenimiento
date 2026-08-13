@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { CURRENCY_NAME } from "@/lib/config";
 
 /**
  * Contrato del archivo de importación.
@@ -24,8 +23,8 @@ export const COLUMNS = {
   minutos_parada: { label: "Minutos parada", required: false, hint: "Por defecto: 0" },
   horas_estimadas: { label: "Horas estimadas", required: false, hint: "Por defecto: 0" },
   horas_reales: { label: "Horas reales", required: false, hint: "Por defecto: 0" },
-  costo_mo: { label: "Costo mano de obra", required: false, hint: `En ${CURRENCY_NAME}` },
-  costo_repuestos: { label: "Costo repuestos", required: false, hint: `En ${CURRENCY_NAME}` },
+  costo_mo: { label: "Costo mano de obra", required: false, hint: "En la moneda de la instalación" },
+  costo_repuestos: { label: "Costo repuestos", required: false, hint: "En la moneda de la instalación" },
 } as const;
 
 export type ColumnKey = keyof typeof COLUMNS;

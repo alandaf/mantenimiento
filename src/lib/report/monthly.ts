@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getFormatters, type Formatters } from "@/lib/config";
 import { formatHours, toPercent } from "@/lib/kpi/formulas";
 import { getFailurePatterns } from "@/lib/kpi/patterns";
 import { monthPeriod, type Period } from "@/lib/kpi/period";
@@ -19,6 +20,8 @@ import {
  */
 export type MonthlyReport = {
   period: Period;
+  /** Formateadores vigentes, resueltos una vez y transportados con los datos. */
+  fmt: Formatters;
   /** Nombre de la instalación: el buque o la planta. Sale de los datos, no
    *  está cableado: el reporte es del cliente, no del proveedor. */
   installation: { name: string; location: string | null };
@@ -95,8 +98,11 @@ export async function buildMonthlyReport(
     SELECT name, location FROM assets WHERE parent_id IS NULL ORDER BY id LIMIT 1
   `)) as unknown as Array<{ name: string; location: string | null }>;
 
+  const fmt = await getFormatters();
+
   return {
     period,
+    fmt,
     installation: root ?? { name: "Instalación", location: null },
     monthLabel: `${MONTHS[month]} ${year}`,
     generatedAt: new Date(),

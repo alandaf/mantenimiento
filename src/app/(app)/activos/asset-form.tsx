@@ -11,7 +11,6 @@ import {
   Textarea,
   toDateInput,
 } from "@/components/form";
-import { CURRENCY_SYMBOL } from "@/lib/config";
 import type { Asset } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
@@ -31,10 +30,13 @@ const STATUS = [
 ];
 
 export function AssetForm({
+  currencySymbol,
   action,
   asset,
   parents,
 }: {
+  /** Símbolo de la moneda: llega del servidor, que es quien conoce la configuración. */
+  currencySymbol: string;
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   asset?: Asset;
   parents: Array<{ id: number; tag: string; name: string }>;
@@ -98,7 +100,7 @@ export function AssetForm({
             />
           </Field>
           <Field
-            label={`Costo de parada por hora (${CURRENCY_SYMBOL})`}
+            label={`Costo de parada por hora (${currencySymbol})`}
             name="downtimeCostPerHour"
             errors={state.errors}
             hint="Alimenta la priorización de OT en la fase 3"

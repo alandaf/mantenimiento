@@ -1,6 +1,7 @@
 import { asc, sql } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import Link from "next/link";
-import { Badge, Button, EmptyState, PageHeader, Panel, money } from "@/components/ui";
+import { Badge, Button, EmptyState, PageHeader, Panel} from "@/components/ui";
 import { db } from "@/db";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ type Row = {
 };
 
 export default async function AssetsPage() {
+  const { money } = await getFormatters();
   // CTE recursiva: la jerarquía se recorre en la BD y llega ya ordenada por
   // rama, con la profundidad lista para indentar el listado.
   const rows = (await db.execute(sql`
