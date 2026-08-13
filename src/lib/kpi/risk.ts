@@ -20,7 +20,7 @@ export const RISK_WEIGHTS = {
   repeatPerFailure: 5,
   /** Exposición económica por hora de parada, normalizada a 12 puntos. */
   costMax: 12,
-  /** Costo/hora que satura el factor económico (S/). */
+  /** Costo/hora que satura el factor económico, en la moneda configurada. */
   costCeiling: 3000,
 } as const;
 
@@ -32,7 +32,7 @@ export type RiskInput = {
   ageDays: number;
   /** Correctivas del mismo activo en los últimos 90 días */
   repeatFailures90d: number;
-  /** Costo de una hora de parada del activo, en soles */
+  /** Costo de una hora de parada del activo, en la moneda configurada */
   downtimeCostPerHour: number;
 };
 

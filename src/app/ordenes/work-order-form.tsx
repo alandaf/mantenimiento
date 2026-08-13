@@ -11,6 +11,7 @@ import {
   Textarea,
   toLocalInput,
 } from "@/components/form";
+import { CURRENCY_SYMBOL } from "@/lib/config";
 import type { WorkOrder } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
@@ -220,7 +221,7 @@ export function WorkOrderForm({
               defaultValue={workOrder?.laborHours ?? "0"}
             />
           </Field>
-          <Field label="Costo M.O. (S/)" name="laborCost" errors={state.errors}>
+          <Field label={`Costo M.O. (${CURRENCY_SYMBOL})`} name="laborCost" errors={state.errors}>
             <Input
               name="laborCost"
               type="number"
@@ -229,7 +230,7 @@ export function WorkOrderForm({
               defaultValue={workOrder?.laborCost ?? "0"}
             />
           </Field>
-          <Field label="Costo repuestos (S/)" name="partsCost" errors={state.errors}>
+          <Field label={`Costo repuestos (${CURRENCY_SYMBOL})`} name="partsCost" errors={state.errors}>
             <Input
               name="partsCost"
               type="number"

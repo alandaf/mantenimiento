@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { db } from "@/db";
+import { CURRENCY_EXAMPLE, CURRENCY_NAME } from "@/lib/config";
 import { aiInsights } from "@/db/schema";
 import { getFailurePattern, type FailurePattern } from "@/lib/kpi/patterns";
 import { AI_MODEL, getClient } from "./client";
@@ -161,7 +162,7 @@ Reglas que no puedes romper:
   solo hay dos ocurrencias y ningún dato de condición, la confianza es baja.
 - Las acciones deben atacar la causa, no el síntoma. "Cambiar el rodamiento" es tratar
   el síntoma; "corregir la desalineación que destruye el rodamiento" es atacar la causa.
-- Los montos están en soles peruanos: escríbelos como "S/ 2,800", nunca con "$".
+- Los montos están en ${CURRENCY_NAME}: escríbelos con el formato ${CURRENCY_EXAMPLE}.
 - Escribe para un ingeniero de mantenimiento: preciso y sin relleno.`;
 
 const MAX_ITERATIONS = 10;

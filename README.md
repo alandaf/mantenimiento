@@ -52,7 +52,43 @@ docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env e
 - `pnpm typecheck` — TypeScript sin emitir
 - `pnpm db:generate` / `db:migrate` — migraciones versionadas (para producción)
 - `pnpm db:push` — sincroniza el esquema sin migración (solo desarrollo)
-- `pnpm db:seed` — datos de demostración: 21 activos, 12 meses de historia
+- `pnpm db:seed` — datos de demostración industriales (planta de galvanizado)
+- `pnpm db:seed marino` — flota marina: sala de máquinas, cubierta y casco de un
+  buque portacontenedores
+
+## Configuración regional
+
+La moneda y el locale se definen en `.env` y se leen en un solo sitio
+([config.ts](src/lib/config.ts)):
+
+```
+APP_LOCALE=es-CL
+APP_CURRENCY=CLP
+```
+
+Alcanza a la interfaz, el PDF, las etiquetas de formulario y los prompts del
+modelo. Las monedas sin subunidad de uso corriente (CLP, JPY, COP…) se formatean
+sin decimales automáticamente.
+
+## Sets de datos
+
+El generador de demostración es común; lo que cambia entre mercados es el
+catálogo. Añadir un rubro nuevo es escribir datos, no lógica
+([seeds/types.ts](src/db/seeds/types.ts)).
+
+| Set | Contenido |
+|---|---|
+| `industrial` | Planta de galvanizado: hornos, bombas, compresores, servicios auxiliares |
+| `marino` | Buque portacontenedores: motor principal, auxiliares, purificadoras, servomotor, casco |
+
+El set marino refleja diferencias reales del rubro: reparaciones más largas
+porque no hay taller a mano, redundancia de auxiliares, equipos cuya criticidad
+viene de la consecuencia de falla y no del lucro cesante, y la corrosión por agua
+salada como modo de falla dominante.
+
+> Nota: el preventivo marino se programa en la práctica por horas de
+> funcionamiento. El modelo de planes es por calendario, así que aquí se
+> aproxima; soportar horómetros es un cambio de esquema pendiente.
 
 ## Cómo se calculan los KPIs
 
