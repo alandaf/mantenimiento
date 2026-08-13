@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -31,6 +32,11 @@ export const assets = pgTable(
     serialNumber: varchar("serial_number", { length: 120 }),
     /** Costo de una hora de parada de este activo — alimenta la priorización. */
     downtimeCostPerHour: integer("downtime_cost_per_hour").notNull().default(0),
+    /**
+     * Si el activo lleva horómetro. Un tanque o una estructura no acumulan
+     * horas de marcha; pedir su lectura sería ruido para quien hace la ronda.
+     */
+    tracksHours: boolean("tracks_hours").notNull().default(false),
     notes: text("notes"),
     installedAt: timestamp("installed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

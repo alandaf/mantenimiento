@@ -86,9 +86,39 @@ porque no hay taller a mano, redundancia de auxiliares, equipos cuya criticidad
 viene de la consecuencia de falla y no del lucro cesante, y la corrosión por agua
 salada como modo de falla dominante.
 
-> Nota: el preventivo marino se programa en la práctica por horas de
-> funcionamiento. El modelo de planes es por calendario, así que aquí se
-> aproxima; soportar horómetros es un cambio de esquema pendiente.
+El set marino incluye horómetros con ritmos de uso realistas: el motor principal
+navega ~14 h/día, la purificadora ~20 h/día y el generador de emergencia apenas
+0,3 h/día de pruebas.
+
+## Preventivo por horas de marcha
+
+El mantenimiento de equipos rotativos no se programa por calendario sino por
+**horas de funcionamiento**. Un auxiliar que estuvo tres meses en dique no
+necesita su rutina de 500 h; uno que hizo dos travesías seguidas la necesita
+antes. Los GMAO genéricos lo hacen mal o no lo hacen.
+
+Una rutina se dispara por `calendario`, por `horas` o por **ambos** — lo que
+llegue primero, que es el caso real más común: el aceite se degrada con el uso
+pero también con el tiempo.
+
+**El puente entre horas y fechas es lo que lo hace útil.** Saber que una rutina
+«vence a las 12.500 h» no permite planificar; saber que eso ocurrirá el 15 de
+marzo sí. Con el ritmo de uso real ([meters.ts](src/lib/kpi/meters.ts), 24 tests)
+el sistema proyecta la fecha y ordena por urgencia real, no por fecha nominal.
+
+Decisiones que evitan cifras falsas:
+
+- **Se guardan lecturas, no un contador mutable.** El histórico permite calcular
+  el ritmo real y una cifra mal tecleada se corrige sin perder la serie.
+- **El ritmo se mide entre extremos de la ventana**, no promediando tramos: un
+  buque alterna travesía y puerto, y promediar tramos amplifica el ruido.
+- **Un horómetro que retrocede se rechaza** — es reemplazo de instrumento o error
+  de tecleo, y proyectar sobre eso da fechas absurdas. También se rechaza un
+  avance superior a 24 h por día de calendario.
+- **Un equipo detenido no vence nunca por horas.** Se informa «sin uso» en vez de
+  proyectar una fecha inventada.
+- **Vencida por horas es un hecho, no una proyección**: no depende de conocer el
+  ritmo.
 
 ## Cómo se calculan los KPIs
 
@@ -213,6 +243,8 @@ src/
 │  ├─ ordenes/          CRUD + filtros + cierre rápido
 │  ├─ priorizacion/     score determinista + análisis del modelo
 │  ├─ causa-raiz/       patrones repetitivos + 5 Porqués e Ishikawa
+│  ├─ preventivo/      rutinas con vencimiento por horas o calendario
+│  ├─ horometros/      lecturas y ritmo de uso por activo
 │  ├─ importar/        carga de Excel con validación fila por fila
 │  ├─ reportes/        descarga del reporte mensual
 │  └─ api/             plantilla .xlsx y reporte .pdf
@@ -222,6 +254,7 @@ src/
    ├─ kpi/formulas.ts   MTTR, MTBF, disponibilidad, Pareto — puras + tests
    ├─ kpi/risk.ts       score de riesgo de OT — puro + tests
    ├─ kpi/recurrence.ts intervalos, tendencia y cronicidad — puro + tests
+   ├─ kpi/meters.ts     ritmo de uso y vencimiento de rutinas — puro + tests
    ├─ kpi/patterns.ts   detección de fallas repetitivas en SQL
    ├─ kpi/queries.ts    agregación en SQL
    ├─ ai/tools.ts       herramientas de solo lectura para tool use
@@ -242,4 +275,6 @@ src/
 - [x] **F4** Detección de fallas repetitivas y análisis de causa raíz
       (5 Porqués + Ishikawa) con evidencia e hipótesis diferenciadas
 - [x] **F5** Importador de Excel y reporte mensual en PDF
-- [ ] **F6** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)
+- [x] **F6** Preventivo por horas de marcha (horómetros)
+- [ ] **F7** Autenticación y roles
+- [ ] **F8** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)

@@ -42,6 +42,14 @@ export type SeedEquipment = {
   repairHours: [number, number];
   /** Códigos de modo de falla propios de este equipo, si aplica. */
   likelyFailures?: string[];
+  /**
+   * Horas de marcha por día. Presente = el activo lleva horómetro.
+   * Un motor principal navega ~14 h/día promedio; un generador de emergencia
+   * apenas 0.3 h de pruebas semanales; un tanque no acumula horas.
+   */
+  hoursPerDay?: number;
+  /** Horómetro acumulado al inicio del histórico. */
+  initialHours?: number;
 };
 
 export type SeedGroup = {
@@ -51,7 +59,10 @@ export type SeedGroup = {
 
 export type SeedPmTemplate = {
   name: string;
-  frequencyDays: number;
+  /** Disparador de la rutina. Por horas es lo natural en equipos rotativos. */
+  trigger: "calendario" | "horas" | "ambos";
+  frequencyDays: number | null;
+  frequencyHours: number | null;
   estimatedHours: string;
 };
 

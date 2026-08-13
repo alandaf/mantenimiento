@@ -14,6 +14,8 @@ const NAV = [
   { href: "/ordenes", label: "Órdenes de trabajo", icon: "▤" },
   { href: "/priorizacion", label: "Priorización IA", icon: "✳" },
   { href: "/causa-raiz", label: "Causa raíz", icon: "◆" },
+  { href: "/preventivo", label: "Plan preventivo", icon: "◷" },
+  { href: "/horometros", label: "Horómetros", icon: "⏱" },
   { href: "/activos", label: "Activos", icon: "⚙" },
   { href: "/importar", label: "Importar Excel", icon: "↥" },
   { href: "/reportes", label: "Reportes PDF", icon: "▣" },
@@ -48,9 +50,9 @@ export default function RootLayout({
 
             <div className="m-3 rounded-lg border border-ink-800 bg-ink-850 p-3">
               <p className="text-[11px] leading-relaxed text-ink-400">
-                <span className="font-semibold text-ink-300">Importar Excel</span>
+                <span className="font-semibold text-ink-300">Preventivo por horas</span>
                 <br />
-                Disponible en la fase 5.
+                Rutinas disparadas por marcha real, no por calendario.
               </p>
             </div>
           </aside>
