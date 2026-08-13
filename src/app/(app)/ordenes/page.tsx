@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import Link from "next/link";
 import {
   Badge,
@@ -7,9 +8,9 @@ import {
   PageHeader,
   Panel,
   PriorityTag,
-  dateFmt,
 } from "@/components/ui";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { formatHours } from "@/lib/kpi/formulas";
 import { CloseButton } from "./close-button";
 
@@ -54,6 +55,8 @@ export default async function WorkOrdersPage({
 }: {
   searchParams: Promise<{ estado?: string; tipo?: string; activo?: string; p?: string }>;
 }) {
+  const { dateFmt } = await getFormatters();
+  const orgId = await getActiveOrgId();
   const params = await searchParams;
   const page = Math.max(1, Number(params.p) || 1);
   const offset = (page - 1) * PAGE_SIZE;
@@ -88,7 +91,7 @@ export default async function WorkOrdersPage({
     JOIN assets a ON a.id = wo.asset_id
     LEFT JOIN technicians t ON t.id = wo.assigned_to
     LEFT JOIN failure_modes fm ON fm.id = wo.failure_mode_id
-    WHERE 1 = 1 ${statusFilter} ${typeFilter} ${assetFilter}
+    WHERE wo.organization_id = ${orgId} ${statusFilter} ${typeFilter} ${assetFilter}
     ORDER BY
       -- Las pendientes primero, y dentro de ellas las más urgentes.
       (wo.status IN ('cerrada','anulada')) ASC,
@@ -100,7 +103,7 @@ export default async function WorkOrdersPage({
   const [{ total }] = (await db.execute(sql`
     SELECT COUNT(*)::int AS total
     FROM work_orders wo
-    WHERE 1 = 1 ${statusFilter} ${typeFilter} ${assetFilter}
+    WHERE wo.organization_id = ${orgId} ${statusFilter} ${typeFilter} ${assetFilter}
   `)) as unknown as Array<{ total: number }>;
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));

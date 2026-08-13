@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { meterReadings } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
@@ -107,6 +108,7 @@ export async function addMeterReading(
 
   try {
     await db.insert(meterReadings).values({
+      organizationId: await getActiveOrgId(),
       assetId,
       hours: hours.toFixed(1),
       takenAt,
@@ -132,7 +134,9 @@ export async function addMeterReading(
 /** Elimina una lectura — para corregir un tecleo sin perder la serie. */
 export async function deleteMeterReading(id: number): Promise<ActionState> {
   await requireRole("tecnico");
-  await db.delete(meterReadings).where(eq(meterReadings.id, id));
+  await db
+    .delete(meterReadings)
+    .where(and(eq(meterReadings.id, id), eq(meterReadings.organizationId, await getActiveOrgId())));
   revalidatePath("/horometros");
   revalidatePath("/preventivo");
   return { ok: true, message: "Lectura eliminada." };
@@ -142,7 +146,7 @@ export async function deleteMeterReading(id: number): Promise<ActionState> {
 export async function getMeterAssets() {
   return (await db.execute(sql`
     SELECT id, tag, name FROM assets
-    WHERE tracks_hours = true AND status <> 'baja'
+    WHERE organization_id = ${await getActiveOrgId()} AND tracks_hours = true AND status <> 'baja'
     ORDER BY tag
   `)) as unknown as Array<{ id: number; tag: string; name: string }>;
 }

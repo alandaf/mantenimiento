@@ -34,6 +34,11 @@ export const meterReadings = pgTable(
   "meter_readings",
   {
     id: serial("id").primaryKey(),
+    /**
+     * Organización dueña de la fila. Toda consulta debe filtrar por esta
+     * columna: es la frontera entre un buque y otro.
+     */
+    organizationId: text("organization_id").notNull(),
     assetId: integer("asset_id")
       .notNull()
       .references(() => assets.id, { onDelete: "cascade" }),
@@ -47,6 +52,7 @@ export const meterReadings = pgTable(
       .defaultNow(),
   },
   (t) => ({
+    orgIdx: index("meter_org_idx").on(t.organizationId),
     assetIdx: index("meter_asset_idx").on(t.assetId, t.takenAt),
     // Dos lecturas del mismo activo en el mismo instante son un doble envío,
     // no un dato: la restricción lo impide en la base, no solo en la UI.

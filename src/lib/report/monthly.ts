@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
+import { getFormatters, type Formatters } from "@/lib/config";
 import { formatHours, toPercent } from "@/lib/kpi/formulas";
 import { getFailurePatterns } from "@/lib/kpi/patterns";
 import { monthPeriod, type Period } from "@/lib/kpi/period";
@@ -19,6 +21,8 @@ import {
  */
 export type MonthlyReport = {
   period: Period;
+  /** Formateadores vigentes, resueltos una vez y transportados con los datos. */
+  fmt: Formatters;
   /** Nombre de la instalación: el buque o la planta. Sale de los datos, no
    *  está cableado: el reporte es del cliente, no del proveedor. */
   installation: { name: string; location: string | null };
@@ -64,6 +68,7 @@ export async function buildMonthlyReport(
   year: number,
   month: number,
 ): Promise<MonthlyReport> {
+  const orgId = await getActiveOrgId();
   const period = monthPeriod(year, month);
 
   const [summary, mix, pareto, badActors, patterns, counts] = await Promise.all([
@@ -85,6 +90,7 @@ export async function buildMonthlyReport(
             AND status = 'cerrada'
         )::int AS closed
       FROM work_orders
+      WHERE organization_id = ${orgId}
     `) as unknown as Promise<Array<{ opened: number; closed: number }>>,
   ]);
 
@@ -92,11 +98,14 @@ export async function buildMonthlyReport(
 
   // Raíz del árbol de activos: el buque o la planta.
   const [root] = (await db.execute(sql`
-    SELECT name, location FROM assets WHERE parent_id IS NULL ORDER BY id LIMIT 1
+    SELECT name, location FROM assets WHERE organization_id = ${orgId} AND parent_id IS NULL ORDER BY id LIMIT 1
   `)) as unknown as Array<{ name: string; location: string | null }>;
+
+  const fmt = await getFormatters();
 
   return {
     period,
+    fmt,
     installation: root ?? { name: "Instalación", location: null },
     monthLabel: `${MONTHS[month]} ${year}`,
     generatedAt: new Date(),
@@ -130,10 +139,11 @@ export async function buildMonthlyReport(
 export async function getAvailableMonths(): Promise<
   Array<{ value: string; label: string }>
 > {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT DISTINCT to_char(reported_at, 'YYYY-MM') AS ym
     FROM work_orders
-    WHERE status <> 'anulada'
+    WHERE organization_id = ${orgId} AND status <> 'anulada'
     ORDER BY ym DESC
     LIMIT 24
   `)) as unknown as Array<{ ym: string }>;

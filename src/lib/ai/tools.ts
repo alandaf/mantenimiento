@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { lastDays } from "@/lib/kpi/period";
 import { getFailurePareto, getKpiSummary } from "@/lib/kpi/queries";
 import { riskBand, riskScore } from "@/lib/kpi/risk";
@@ -38,6 +39,7 @@ export type OpenWorkOrder = {
  * inventa.
  */
 export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       wo.id, wo.code, wo.title,
@@ -61,7 +63,8 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
     JOIN assets a ON a.id = wo.asset_id
     LEFT JOIN failure_modes fm ON fm.id = wo.failure_mode_id
     LEFT JOIN technicians t ON t.id = wo.assigned_to
-    WHERE wo.status IN ('abierta', 'asignada', 'ejecucion', 'pausada')
+    WHERE wo.organization_id = ${orgId}
+      AND wo.status IN ('abierta', 'asignada', 'ejecucion', 'pausada')
     ORDER BY wo.reported_at ASC
     LIMIT ${limit}
   `)) as unknown as Array<{
@@ -114,6 +117,7 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
 
 /** Historial de fallas de un activo — evidencia para el análisis de repetitividad. */
 async function getAssetHistory(assetTag: string, days = 365) {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       wo.code, wo.title,
@@ -126,7 +130,8 @@ async function getAssetHistory(assetTag: string, days = 365) {
     FROM work_orders wo
     JOIN assets a ON a.id = wo.asset_id
     LEFT JOIN failure_modes fm ON fm.id = wo.failure_mode_id
-    WHERE a.tag = ${assetTag}
+    WHERE a.organization_id = ${orgId}
+      AND a.tag = ${assetTag}
       AND wo.reported_at > now() - (${days} || ' days')::interval
       AND wo.status <> 'anulada'
     ORDER BY wo.reported_at DESC
@@ -137,6 +142,7 @@ async function getAssetHistory(assetTag: string, days = 365) {
 
 /** Ficha del activo más su posición en la jerarquía. */
 async function getAssetContext(assetTag: string) {
+  const orgId = await getActiveOrgId();
   const [row] = (await db.execute(sql`
     SELECT
       a.tag, a.name,
@@ -151,7 +157,7 @@ async function getAssetContext(assetTag: string) {
         WHERE pp.asset_id = a.id AND pp.active AND pp.next_due_at < now())::int AS pm_overdue
     FROM assets a
     LEFT JOIN assets p ON p.id = a.parent_id
-    WHERE a.tag = ${assetTag}
+    WHERE a.organization_id = ${orgId} AND a.tag = ${assetTag}
   `)) as unknown as unknown[];
   return row ?? { error: `No existe un activo con tag ${assetTag}` };
 }

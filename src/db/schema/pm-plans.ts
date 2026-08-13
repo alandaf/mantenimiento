@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  text,
   boolean,
   index,
   integer,
@@ -26,6 +27,11 @@ export const pmPlans = pgTable(
   "pm_plans",
   {
     id: serial("id").primaryKey(),
+    /**
+     * Organización dueña de la fila. Toda consulta debe filtrar por esta
+     * columna: es la frontera entre un buque y otro.
+     */
+    organizationId: text("organization_id").notNull(),
     assetId: integer("asset_id")
       .notNull()
       .references(() => assets.id, { onDelete: "cascade" }),
@@ -53,6 +59,7 @@ export const pmPlans = pgTable(
     active: boolean("active").notNull().default(true),
   },
   (t) => ({
+    orgIdx: index("pm_org_idx").on(t.organizationId),
     assetIdx: index("pm_asset_idx").on(t.assetId),
     dueIdx: index("pm_due_idx").on(t.nextDueAt),
     dueHoursIdx: index("pm_due_hours_idx").on(t.nextDueHours),

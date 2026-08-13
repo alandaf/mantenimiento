@@ -1,5 +1,6 @@
-import { asc, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { assets, failureModes, technicians, workOrders } from "@/db/schema";
 import { normalizeHeader } from "./schema";
 import { importRowSchema, type ColumnKey, type RawRow } from "./schema";
@@ -45,12 +46,12 @@ export type ValidationReport = {
 const REQUIRED_COLUMNS: ColumnKey[] = ["tag_activo", "tipo", "titulo", "reportado"];
 
 /** Catálogos indexados por clave normalizada, para tolerar mayúsculas y tildes. */
-async function loadCatalogs() {
+async function loadCatalogs(orgId: string) {
   const [assetRows, modeRows, techRows, codeRows] = await Promise.all([
-    db.select({ id: assets.id, tag: assets.tag }).from(assets),
-    db.select({ id: failureModes.id, name: failureModes.name, code: failureModes.code }).from(failureModes),
-    db.select({ id: technicians.id, name: technicians.name, email: technicians.email }).from(technicians),
-    db.select({ code: workOrders.code }).from(workOrders).orderBy(asc(workOrders.code)),
+    db.select({ id: assets.id, tag: assets.tag }).from(assets).where(eq(assets.organizationId, orgId)),
+    db.select({ id: failureModes.id, name: failureModes.name, code: failureModes.code }).from(failureModes).where(eq(failureModes.organizationId, orgId)),
+    db.select({ id: technicians.id, name: technicians.name, email: technicians.email }).from(technicians).where(eq(technicians.organizationId, orgId)),
+    db.select({ code: workOrders.code }).from(workOrders).where(eq(workOrders.organizationId, orgId)).orderBy(asc(workOrders.code)),
   ]);
 
   return {
@@ -68,12 +69,12 @@ async function loadCatalogs() {
 }
 
 /** Siguiente correlativo disponible, para las filas sin código. */
-async function nextCodeSequence(): Promise<{ year: number; next: number }> {
+async function nextCodeSequence(orgId: string): Promise<{ year: number; next: number }> {
   const year = new Date().getFullYear();
   const [row] = (await db.execute(sql`
     SELECT COALESCE(MAX(SUBSTRING(code FROM 9)::int), 0) + 1 AS next
     FROM work_orders
-    WHERE code LIKE ${`OT-${year}-%`}
+    WHERE organization_id = ${orgId} AND code LIKE ${`OT-${year}-%`}
   `)) as unknown as Array<{ next: number }>;
   return { year, next: row.next };
 }
@@ -83,6 +84,7 @@ export async function validateRows(
   mapping: Partial<Record<ColumnKey, number>>,
   unknownColumns: string[],
 ): Promise<ValidationReport> {
+  const orgId = await getActiveOrgId();
   const missingColumns = REQUIRED_COLUMNS.filter((c) => mapping[c] === undefined);
 
   if (missingColumns.length > 0) {
@@ -96,8 +98,8 @@ export async function validateRows(
     };
   }
 
-  const catalogs = await loadCatalogs();
-  const seq = await nextCodeSequence();
+  const catalogs = await loadCatalogs(orgId);
+  const seq = await nextCodeSequence(orgId);
   let counter = seq.next;
 
   const valid: ValidRow[] = [];
@@ -212,6 +214,7 @@ export async function validateRows(
     valid.push({
       row: raw._row,
       values: {
+        organizationId: orgId,
         code,
         assetId: assetId!,
         type: data.tipo,

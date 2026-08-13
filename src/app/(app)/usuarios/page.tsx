@@ -1,6 +1,6 @@
 import { EmptyState, PageHeader, Panel } from "@/components/ui";
+import { getFormatters } from "@/lib/config";
 import { listUsers } from "@/lib/actions/users";
-import { dateFmt } from "@/lib/config";
 import { requireRole, ROLES, type Role } from "@/lib/session";
 import { CreateUserForm, UserRowActions } from "./user-admin";
 
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Usuarios" };
 
 export default async function UsuariosPage() {
+  const { dateFmt } = await getFormatters();
   const session = await requireRole("admin");
   const users = await listUsers();
 

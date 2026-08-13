@@ -11,7 +11,6 @@ import {
   Textarea,
   toLocalInput,
 } from "@/components/form";
-import { CURRENCY_SYMBOL } from "@/lib/config";
 import type { WorkOrder } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
@@ -41,12 +40,15 @@ const PRIORITIES = [
 ];
 
 export function WorkOrderForm({
+  currencySymbol,
   action,
   workOrder,
   assets,
   technicians,
   failureModes,
 }: {
+  /** Símbolo de la moneda: llega del servidor, que es quien conoce la configuración. */
+  currencySymbol: string;
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   workOrder?: WorkOrder;
   assets: Array<{ id: number; tag: string; name: string }>;
@@ -221,7 +223,7 @@ export function WorkOrderForm({
               defaultValue={workOrder?.laborHours ?? "0"}
             />
           </Field>
-          <Field label={`Costo M.O. (${CURRENCY_SYMBOL})`} name="laborCost" errors={state.errors}>
+          <Field label={`Costo M.O. (${currencySymbol})`} name="laborCost" errors={state.errors}>
             <Input
               name="laborCost"
               type="number"
@@ -230,7 +232,7 @@ export function WorkOrderForm({
               defaultValue={workOrder?.laborCost ?? "0"}
             />
           </Field>
-          <Field label={`Costo repuestos (${CURRENCY_SYMBOL})`} name="partsCost" errors={state.errors}>
+          <Field label={`Costo repuestos (${currencySymbol})`} name="partsCost" errors={state.errors}>
             <Input
               name="partsCost"
               type="number"

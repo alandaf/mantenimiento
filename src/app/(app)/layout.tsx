@@ -23,6 +23,7 @@ const NAV: Array<{ href: string; label: string; icon: string; min: Role }> = [
   { href: "/importar", label: "Importar Excel", icon: "↥", min: "planificador" },
   { href: "/reportes", label: "Reportes PDF", icon: "▣", min: "lectura" },
   { href: "/usuarios", label: "Usuarios", icon: "◐", min: "admin" },
+  { href: "/configuracion", label: "Configuración", icon: "⚒", min: "admin" },
 ];
 
 export default async function AppLayout({

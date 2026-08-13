@@ -1,7 +1,8 @@
 import { desc, eq } from "drizzle-orm";
+import { getFormatters } from "@/lib/config";
 import { requireRole } from "@/lib/session";
 import Link from "next/link";
-import { Badge, EmptyState, PageHeader, Panel, money } from "@/components/ui";
+import { Badge, EmptyState, PageHeader, Panel} from "@/components/ui";
 import { db } from "@/db";
 import { aiInsights } from "@/db/schema";
 import { hasApiKey } from "@/lib/ai/client";
@@ -19,6 +20,7 @@ const BAND_STYLES: Record<string, string> = {
 };
 
 export default async function PrioritizacionPage() {
+  const { money } = await getFormatters();
   // Ocultar el enlace del menú no basta: hay que cerrar la página.
   await requireRole("tecnico");
   const [orders, [latest]] = await Promise.all([

@@ -6,7 +6,6 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
-import { longDateTimeFmt, money } from "@/lib/config";
 import type { MonthlyReport } from "./monthly";
 
 /**
@@ -144,6 +143,9 @@ function Cell({
 
 export function MonthlyReportPdf({ data }: { data: MonthlyReport }) {
   const f = data.formatted;
+  // Los formateadores llegan con los datos: el PDF se genera en un route
+  // handler y no debe volver a consultar la configuración por su cuenta.
+  const { money, longDateTimeFmt } = data.fmt;
   const fmtDate = longDateTimeFmt;
 
   return (

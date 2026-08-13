@@ -1,6 +1,6 @@
 import { Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
+import { getFormatters } from "@/lib/config";
 import { requireRole } from "@/lib/session";
-import { dateFmt } from "@/lib/config";
 import { getAssetMeters } from "@/lib/kpi/meter-queries";
 import { ReadingForm } from "./reading-form";
 
@@ -11,6 +11,7 @@ export const metadata = { title: "Horómetros" };
 const STALE_DAYS = 30;
 
 export default async function HorometrosPage() {
+  const { dateFmt } = await getFormatters();
   // Ocultar el enlace del menú no basta: hay que cerrar la página.
   await requireRole("tecnico");
   const meters = await getAssetMeters();
