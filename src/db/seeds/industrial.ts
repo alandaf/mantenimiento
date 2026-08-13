@@ -76,10 +76,10 @@ export const industrialDataset: SeedDataset = {
   ],
 
   pmTemplates: [
-    { name: "Inspección visual y lubricación", frequencyDays: 30, estimatedHours: "2.00" },
-    { name: "Análisis de vibraciones", frequencyDays: 90, estimatedHours: "3.50" },
-    { name: "Termografía de tableros", frequencyDays: 90, estimatedHours: "2.50" },
-    { name: "Cambio de aceite y filtros", frequencyDays: 180, estimatedHours: "5.00" },
-    { name: "Overhaul mayor", frequencyDays: 365, estimatedHours: "24.00" },
+    { name: "Inspección visual y lubricación", trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "2.00" },
+    { name: "Análisis de vibraciones", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "3.50" },
+    { name: "Termografía de tableros", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "2.50" },
+    { name: "Cambio de aceite y filtros", trigger: "ambos", frequencyDays: 180, frequencyHours: 4_000, estimatedHours: "5.00" },
+    { name: "Overhaul mayor", trigger: "calendario", frequencyDays: 365, frequencyHours: null, estimatedHours: "24.00" },
   ],
 };

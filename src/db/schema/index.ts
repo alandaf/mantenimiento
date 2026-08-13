@@ -4,4 +4,5 @@ export * from "./failure-modes";
 export * from "./technicians";
 export * from "./work-orders";
 export * from "./pm-plans";
+export * from "./meters";
 export * from "./ai-insights";

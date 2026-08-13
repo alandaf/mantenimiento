@@ -42,6 +42,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 4_200_000,
           failuresPerYear: 7,
           repairHours: [6, 30],
+          hoursPerDay: 14.0,
+          initialHours: 68000,
           likelyFailures: ["FM-001", "FM-002", "FM-004", "FM-010"],
         },
         {
@@ -53,6 +55,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 3_100_000,
           failuresPerYear: 5,
           repairHours: [5, 20],
+          hoursPerDay: 14.0,
+          initialHours: 52000,
           likelyFailures: ["FM-003", "FM-001", "FM-013"],
         },
         {
@@ -64,6 +68,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 4_500_000,
           failuresPerYear: 2,
           repairHours: [10, 40],
+          hoursPerDay: 14.0,
+          initialHours: 71000,
           likelyFailures: ["FM-005", "FM-012"],
         },
         {
@@ -75,6 +81,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 950_000,
           failuresPerYear: 6,
           repairHours: [3, 12],
+          hoursPerDay: 15.5,
+          initialHours: 44000,
           likelyFailures: ["FM-013", "FM-012", "FM-006"],
         },
         {
@@ -86,6 +94,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 2_800_000,
           failuresPerYear: 5,
           repairHours: [3, 10],
+          hoursPerDay: 15.5,
+          initialHours: 39000,
           likelyFailures: ["FM-005", "FM-001", "FM-011"],
         },
       ],
@@ -104,6 +114,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 780_000,
           failuresPerYear: 8,
           repairHours: [4, 16],
+          hoursPerDay: 9.0,
+          initialHours: 31000,
           likelyFailures: ["FM-001", "FM-004", "FM-010", "FM-014"],
         },
         {
@@ -115,6 +127,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 780_000,
           failuresPerYear: 7,
           repairHours: [4, 16],
+          hoursPerDay: 8.0,
+          initialHours: 28500,
           likelyFailures: ["FM-001", "FM-004", "FM-014"],
         },
         {
@@ -126,6 +140,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 780_000,
           failuresPerYear: 9,
           repairHours: [4, 18],
+          hoursPerDay: 10.0,
+          initialHours: 34000,
           likelyFailures: ["FM-001", "FM-010", "FM-014"],
         },
         {
@@ -139,6 +155,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 1_900_000,
           failuresPerYear: 2,
           repairHours: [4, 14],
+          hoursPerDay: 0.3,
+          initialHours: 1450,
           likelyFailures: ["FM-014", "FM-009", "FM-008"],
         },
         {
@@ -150,6 +168,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 620_000,
           failuresPerYear: 5,
           repairHours: [5, 20],
+          hoursPerDay: 13.0,
+          initialHours: 41000,
           likelyFailures: ["FM-013", "FM-012", "FM-007"],
         },
         {
@@ -161,6 +181,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 2_400_000,
           failuresPerYear: 10,
           repairHours: [2, 9],
+          hoursPerDay: 20.0,
+          initialHours: 58000,
           likelyFailures: ["FM-011", "FM-005", "FM-001", "FM-015"],
         },
         {
@@ -172,6 +194,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 2_100_000,
           failuresPerYear: 6,
           repairHours: [3, 11],
+          hoursPerDay: 4.0,
+          initialHours: 17500,
           likelyFailures: ["FM-016", "FM-001", "FM-005"],
         },
         {
@@ -184,6 +208,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 900_000,
           failuresPerYear: 4,
           repairHours: [3, 10],
+          hoursPerDay: 2.5,
+          initialHours: 9800,
           likelyFailures: ["FM-011", "FM-015", "FM-009"],
         },
         {
@@ -195,6 +221,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 260_000,
           failuresPerYear: 4,
           repairHours: [2, 8],
+          hoursPerDay: 11.0,
+          initialHours: 29000,
           likelyFailures: ["FM-013", "FM-012"],
         },
       ],
@@ -213,6 +241,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 4_000_000,
           failuresPerYear: 3,
           repairHours: [5, 18],
+          hoursPerDay: 14.0,
+          initialHours: 47000,
           likelyFailures: ["FM-010", "FM-011", "FM-008"],
         },
         {
@@ -224,6 +254,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 1_400_000,
           failuresPerYear: 4,
           repairHours: [4, 16],
+          hoursPerDay: 0.8,
+          initialHours: 3100,
           likelyFailures: ["FM-010", "FM-005", "FM-006"],
         },
         {
@@ -235,6 +267,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 850_000,
           failuresPerYear: 5,
           repairHours: [3, 12],
+          hoursPerDay: 0.6,
+          initialHours: 2400,
           likelyFailures: ["FM-010", "FM-012", "FM-005"],
         },
         {
@@ -257,6 +291,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 1_100_000,
           failuresPerYear: 7,
           repairHours: [3, 11],
+          hoursPerDay: 3.0,
+          initialHours: 12500,
           likelyFailures: ["FM-005", "FM-012", "FM-001"],
         },
         {
@@ -280,6 +316,8 @@ export const marineDataset: SeedDataset = {
           downtimeCostPerHour: 3_500_000,
           failuresPerYear: 6,
           repairHours: [3, 14],
+          hoursPerDay: 18.0,
+          initialHours: 53000,
           likelyFailures: ["FM-008", "FM-013", "FM-006"],
         },
       ],
@@ -327,10 +365,13 @@ export const marineDataset: SeedDataset = {
    * de planes es por fecha (ver nota en el README).
    */
   pmTemplates: [
-    { name: "Rutina diaria de guardia de máquinas", frequencyDays: 30, estimatedHours: "1.50" },
-    { name: "Análisis de aceite lubricante", frequencyDays: 90, estimatedHours: "2.00" },
-    { name: "Termografía de tableros principales", frequencyDays: 90, estimatedHours: "3.00" },
-    { name: "Inspección de sacrificio anódico y corrosión", frequencyDays: 180, estimatedHours: "6.00" },
-    { name: "Overhaul de culatas y camisas", frequencyDays: 365, estimatedHours: "36.00" },
+    // Cadencias de a bordo: las rutinas de máquina van por horas de marcha,
+    // las de casco y seguridad por calendario, y el aceite por lo que llegue
+    // primero — se degrada con el uso, pero también con el tiempo.
+    { name: "Rutina de 500 h — inspección y ajuste", trigger: "horas", frequencyDays: null, frequencyHours: 500, estimatedHours: "4.00" },
+    { name: "Cambio de aceite y filtros", trigger: "ambos", frequencyDays: 180, frequencyHours: 2_000, estimatedHours: "5.00" },
+    { name: "Termografía de tableros principales", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "3.00" },
+    { name: "Inspección de sacrificio anódico y corrosión", trigger: "calendario", frequencyDays: 180, frequencyHours: null, estimatedHours: "6.00" },
+    { name: "Overhaul de culatas y camisas", trigger: "horas", frequencyDays: null, frequencyHours: 12_000, estimatedHours: "36.00" },
   ],
 };

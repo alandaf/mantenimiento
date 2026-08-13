@@ -3,10 +3,12 @@ import { db, sqlClient } from "./index";
 import {
   assets,
   failureModes,
+  meterReadings,
   pmPlans,
   technicians,
   workOrders,
   type NewAsset,
+  type NewMeterReading,
   type NewWorkOrder,
 } from "./schema";
 import { industrialDataset } from "./seeds/industrial";
@@ -119,6 +121,7 @@ async function seed(dataset: SeedDataset) {
           model: eq.model,
           serialNumber: `SN-${randInt(100000, 999999)}`,
           downtimeCostPerHour: eq.downtimeCostPerHour,
+          tracksHours: eq.hoursPerDay !== undefined,
           installedAt: new Date(
             Date.UTC(randInt(2012, 2022), randInt(0, 11), randInt(1, 28)),
           ),
@@ -131,29 +134,90 @@ async function seed(dataset: SeedDataset) {
     });
   }
 
-  console.log("→ Planes preventivos…");
   const now = new Date();
+  const horizonStart = new Date(now.getTime() - MONTHS_OF_HISTORY * 30 * 86_400_000);
+
+  console.log("→ Lecturas de horómetro…");
+  /** Horómetro actual de cada activo, para cuadrar los planes por horas. */
+  const currentHours = new Map<number, number>();
+  const readings: NewMeterReading[] = [];
+
+  for (const { row, profile } of equipmentRows) {
+    if (profile.hoursPerDay === undefined) continue;
+
+    let hours = profile.initialHours ?? 0;
+    // Una lectura cada ~15 días, como una ronda de guardia real.
+    for (let day = 0; day <= MONTHS_OF_HISTORY * 30; day += 15) {
+      const takenAt = new Date(horizonStart.getTime() + day * 86_400_000);
+      if (takenAt > now) break;
+      if (day > 0) {
+        // El uso varía: travesía, puerto, dique. ±40% sobre el promedio.
+        hours += profile.hoursPerDay * 15 * (0.6 + rand() * 0.8);
+      }
+      readings.push({
+        assetId: row.id,
+        hours: hours.toFixed(1),
+        takenAt,
+        source: "manual",
+      });
+    }
+    currentHours.set(row.id, hours);
+  }
+  if (readings.length > 0) {
+    for (let i = 0; i < readings.length; i += 500) {
+      await db.insert(meterReadings).values(readings.slice(i, i + 500));
+    }
+  }
+
+  console.log("→ Planes preventivos…");
   await db.insert(pmPlans).values(
     equipmentRows.flatMap(({ row, profile }) => {
       const count =
         profile.criticality === "A" ? 3 : profile.criticality === "B" ? 2 : 1;
-      return dataset.pmTemplates.slice(0, count).map((tpl) => ({
-        assetId: row.id,
-        name: tpl.name,
-        frequencyDays: tpl.frequencyDays,
-        estimatedHours: tpl.estimatedHours,
-        lastExecutedAt: new Date(now.getTime() - randInt(5, 60) * 86_400_000),
-        nextDueAt: new Date(
-          now.getTime() +
-            randInt(-tpl.frequencyDays, tpl.frequencyDays) * 86_400_000,
-        ),
-        active: true,
-      }));
+      const hours = currentHours.get(row.id) ?? null;
+
+      return dataset.pmTemplates
+        .slice(0, count)
+        // Una rutina por horas sobre un activo sin horómetro no tiene sentido.
+        .filter((tpl) => tpl.trigger === "calendario" || hours !== null)
+        .map((tpl) => {
+          const usesCalendar = tpl.trigger !== "horas" && tpl.frequencyDays;
+          const usesHours = tpl.trigger !== "calendario" && tpl.frequencyHours;
+
+          // Se reparte el ciclo para que algunas rutinas queden vencidas y
+          // otras por vencer: un tablero con todo en verde no enseña nada.
+          const progress = rand();
+
+          const lastHours = usesHours
+            ? hours! - tpl.frequencyHours! * progress
+            : null;
+
+          return {
+            assetId: row.id,
+            name: tpl.name,
+            trigger: tpl.trigger,
+            frequencyDays: tpl.frequencyDays,
+            frequencyHours: tpl.frequencyHours,
+            estimatedHours: tpl.estimatedHours,
+            lastExecutedAt: new Date(now.getTime() - randInt(5, 60) * 86_400_000),
+            lastExecutedHours: lastHours !== null ? lastHours.toFixed(1) : null,
+            nextDueAt: usesCalendar
+              ? new Date(
+                  now.getTime() +
+                    randInt(-tpl.frequencyDays!, tpl.frequencyDays!) * 86_400_000,
+                )
+              : null,
+            nextDueHours:
+              lastHours !== null
+                ? (lastHours + tpl.frequencyHours!).toFixed(1)
+                : null,
+            active: true,
+          };
+        });
     }),
   );
 
   console.log("→ Órdenes de trabajo (12 meses)…");
-  const horizonStart = new Date(now.getTime() - MONTHS_OF_HISTORY * 30 * 86_400_000);
   const horizonMs = now.getTime() - horizonStart.getTime();
   const orders: NewWorkOrder[] = [];
 
