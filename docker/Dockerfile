@@ -7,6 +7,9 @@ FROM node:22-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+# Store fijo: sin esto pnpm lo reubica bajo /app al entrar por el bind mount y
+# deja de reconocer el node_modules que instaló la imagen.
+ENV npm_config_store_dir=/pnpm/store
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
 
