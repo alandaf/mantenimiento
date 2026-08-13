@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import {
   chronicityBand,
   meanIntervalDays,
@@ -44,6 +45,7 @@ export type FailurePattern = {
  * explicar, así que se excluye en el HAVING.
  */
 export async function getFailurePatterns(days = 365): Promise<FailurePattern[]> {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       a.id AS asset_id,
@@ -60,7 +62,8 @@ export async function getFailurePatterns(days = 365): Promise<FailurePattern[]> 
     FROM work_orders wo
     JOIN assets a ON a.id = wo.asset_id
     JOIN failure_modes fm ON fm.id = wo.failure_mode_id
-    WHERE wo.type = 'correctivo'
+    WHERE wo.organization_id = ${orgId}
+      AND wo.type = 'correctivo'
       AND wo.status <> 'anulada'
       AND wo.reported_at > now() - (${days} || ' days')::interval
     GROUP BY a.id, a.tag, a.name, a.criticality, fm.id, fm.name, fm.category

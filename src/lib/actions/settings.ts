@@ -5,11 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { settings } from "@/db/schema";
-import {
-  DEFAULT_ORG,
-  SUPPORTED_CURRENCIES,
-  SUPPORTED_LOCALES,
-} from "@/lib/config";
+import { SUPPORTED_CURRENCIES, SUPPORTED_LOCALES } from "@/lib/config";
+import { getActiveOrgId } from "@/lib/org";
 import { requireRole } from "@/lib/session";
 import type { ActionState } from "@/lib/validation";
 
@@ -53,7 +50,7 @@ export async function updateSettings(
 
   await db
     .insert(settings)
-    .values({ organizationId: DEFAULT_ORG, ...parsed.data })
+    .values({ organizationId: await getActiveOrgId(), ...parsed.data })
     .onConflictDoUpdate({
       target: settings.organizationId,
       set: parsed.data,
@@ -74,7 +71,7 @@ export async function readSettings() {
   const [row] = await db
     .select()
     .from(settings)
-    .where(eq(settings.organizationId, DEFAULT_ORG))
+    .where(eq(settings.organizationId, await getActiveOrgId()))
     .limit(1);
   return row ?? null;
 }

@@ -8,18 +8,25 @@
  *
  *   pnpm tsx scripts/create-admin.ts "Rodrigo Vergara" jefe@naviera.cl "clave-larga"
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, sqlClient } from "../src/db";
 import { user } from "../src/db/schema";
 import { auth } from "../src/lib/auth";
 
 async function main() {
-  const [name, email, password] = process.argv.slice(2);
+  const [name, email, password, slug] = process.argv.slice(2);
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !slug) {
     console.error(
-      'Uso: pnpm tsx scripts/create-admin.ts "Nombre Apellido" correo@dominio.cl "contraseña"',
+      'Uso: pnpm tsx scripts/create-admin.ts "Nombre Apellido" correo@dominio.cl "contraseña" <slug-instalacion>',
     );
+    const orgs = (await db.execute(
+      sql`SELECT slug, name FROM organization ORDER BY name`,
+    )) as unknown as Array<{ slug: string; name: string }>;
+    if (orgs.length > 0) {
+      console.error("Instalaciones disponibles:");
+      for (const o of orgs) console.error(`  ${o.slug}  —  ${o.name}`);
+    }
     process.exit(1);
   }
   if (password.length < 10) {
@@ -36,6 +43,15 @@ async function main() {
 
   if (existing) {
     console.error(`Ya existe una cuenta con el correo ${normalized}.`);
+    process.exit(1);
+  }
+
+  const [org] = (await db.execute(
+    sql`SELECT id, name FROM organization WHERE slug = ${slug}`,
+  )) as unknown as Array<{ id: string; name: string }>;
+
+  if (!org) {
+    console.error(`No existe una instalación con slug "${slug}".`);
     process.exit(1);
   }
 
@@ -56,9 +72,17 @@ async function main() {
     password: await ctx.password.hash(password),
   });
 
+  // La pertenencia es lo que da acceso a los datos del buque: sin la fila en
+  // member, la sesión no tiene organización activa y no ve nada.
+  await db.execute(sql`
+    INSERT INTO member (id, organization_id, user_id, role, created_at)
+    VALUES (${crypto.randomUUID()}, ${org.id}, ${created.id}, 'owner', now())
+  `);
+
   console.log(`
 ✔ Administrador creado
   ${name} <${normalized}>
+  Instalación: ${org.name}
 
   Entra en /login y cambia la contraseña cuanto antes.
 `);

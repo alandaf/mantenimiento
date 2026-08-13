@@ -58,6 +58,37 @@ docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env e
 - `pnpm db:seed marino` — flota marina: sala de máquinas, cubierta y casco de un
   buque portacontenedores
 
+## Multi-instalación
+
+Una instancia puede atender a varios buques o plantas. La **organización** es la
+frontera: cada fila de dominio lleva `organization_id` y **toda** consulta filtra
+por la organización activa de la sesión, que se resuelve desde la sesión y nunca
+desde un parámetro de la petición — si viniera de la URL, cambiar un número daría
+acceso a la flota ajena.
+
+Tres cosas que hubo que corregir al probarlo con dos buques reales, y que con uno
+solo habrían pasado desapercibidas:
+
+- **Las restricciones de unicidad eran globales.** Dos buques tienen cada uno su
+  `EQ-101` y su `FM-001`; ahora son únicos por organización.
+- **Las listas filtraban pero las páginas de detalle no.** Escribir el id de una
+  orden ajena en la URL la abría. Ahora devuelve 404.
+- **La configuración y la lista de usuarios se compartían** entre instalaciones.
+
+El seed crea dos buques deliberadamente distintos —un portacontenedores y un
+granelero, con activos que no se solapan— porque con instalaciones idénticas un
+fallo de aislamiento no se nota:
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env exec web pnpm db:seed
+```
+
+Cada cuenta se asocia a una instalación por su slug:
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.dev.yml --env-file .env exec web pnpm tsx scripts/create-admin.ts "Nombre" correo@naviera.cl "clave-larga" bahia-valparaiso
+```
+
 ## Autenticación y roles
 
 Correo y contraseña, sin registro público: **las cuentas las crea el
@@ -320,5 +351,6 @@ src/
 - [x] **F5** Importador de Excel y reporte mensual en PDF
 - [x] **F6** Preventivo por horas de marcha (horómetros)
 - [x] **F7** Autenticación por correo y contraseña, con roles y gestión de cuentas
-- [ ] **F8** `organization_id` en el dominio y configuración en base de datos
+- [x] **F8** Multi-instalación: `organization_id` en el dominio y configuración
+      en base de datos
 - [ ] **F9** Despliegue al VPS (pendiente: IP, acceso SSH y dominio)

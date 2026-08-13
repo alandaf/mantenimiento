@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { getFormatters } from "@/lib/config";
 import { aiInsights } from "@/db/schema";
 import { AI_MODEL, getClient } from "./client";
@@ -210,6 +211,7 @@ export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
   const result = outputSchema.parse(JSON.parse(text));
 
   await db.insert(aiInsights).values({
+    organizationId: await getActiveOrgId(),
     scope: "priorizacion",
     model: AI_MODEL,
     prompt: SYSTEM_PROMPT,

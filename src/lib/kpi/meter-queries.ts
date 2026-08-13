@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import {
   latestReading,
   pmStatus,
@@ -24,6 +25,7 @@ export type AssetMeter = {
 };
 
 export async function getAssetMeters(): Promise<AssetMeter[]> {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       a.id AS asset_id, a.tag, a.name,
@@ -38,7 +40,7 @@ export async function getAssetMeters(): Promise<AssetMeter[]> {
       ) AS readings
     FROM assets a
     LEFT JOIN meter_readings mr ON mr.asset_id = a.id
-    WHERE a.tracks_hours = true AND a.status <> 'baja'
+    WHERE a.organization_id = ${orgId} AND a.tracks_hours = true AND a.status <> 'baja'
     GROUP BY a.id, a.tag, a.name, a.criticality, a.location
     ORDER BY a.tag
   `)) as unknown as Array<{
@@ -98,6 +100,7 @@ export type PmPlanStatus = {
  * planificador puede usar para pedir repuestos.
  */
 export async function getPmPlanStatuses(): Promise<PmPlanStatus[]> {
+  const orgId = await getActiveOrgId();
   const meters = await getAssetMeters();
   const byAsset = new Map(meters.map((m) => [m.assetId, m]));
 
@@ -112,7 +115,7 @@ export async function getPmPlanStatuses(): Promise<PmPlanStatus[]> {
       a.criticality::text AS criticality
     FROM pm_plans p
     JOIN assets a ON a.id = p.asset_id
-    WHERE p.active = true AND a.status <> 'baja'
+    WHERE p.organization_id = ${orgId} AND p.active = true AND a.status <> 'baja'
   `)) as unknown as Array<{
     plan_id: number;
     name: string;
@@ -175,6 +178,7 @@ export async function getPmPlanStatuses(): Promise<PmPlanStatus[]> {
 
 /** Historial de lecturas de un activo, de la más reciente a la más antigua. */
 export async function getReadingHistory(assetId: number, limit = 30) {
+  const orgId = await getActiveOrgId();
   return (await db.execute(sql`
     SELECT
       mr.id,
@@ -183,7 +187,7 @@ export async function getReadingHistory(assetId: number, limit = 30) {
       mr.source::text AS source,
       mr.note
     FROM meter_readings mr
-    WHERE mr.asset_id = ${assetId}
+    WHERE mr.organization_id = ${orgId} AND mr.asset_id = ${assetId}
     ORDER BY mr.taken_at DESC
     LIMIT ${limit}
   `)) as unknown as Array<{

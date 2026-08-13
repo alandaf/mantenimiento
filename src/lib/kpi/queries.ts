@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import {
   correctiveRatio,
   inherentAvailability,
@@ -42,6 +43,7 @@ export type KpiSummary = {
 };
 
 export async function getKpiSummary(period: Period): Promise<KpiSummary> {
+  const orgId = await getActiveOrgId();
   const [totals] = (await db.execute(sql`
     SELECT
       COUNT(*) FILTER (
@@ -60,11 +62,11 @@ export async function getKpiSummary(period: Period): Promise<KpiSummary> {
       -- Solo hojas del árbol: la planta y las líneas son agrupadores, no
       -- equipos, y contarlas inflaría el tiempo operativo de la flota.
       (SELECT COUNT(*) FROM assets a
-        WHERE a.status <> 'baja'
+        WHERE a.organization_id = ${orgId} AND a.status <> 'baja'
           AND NOT EXISTS (SELECT 1 FROM assets c WHERE c.parent_id = a.id)
       )::int AS active_assets
     FROM work_orders
-    WHERE reported_at >= ${period.from.toISOString()}::timestamptz AND reported_at < ${period.to.toISOString()}::timestamptz
+    WHERE organization_id = ${orgId} AND reported_at >= ${period.from.toISOString()}::timestamptz AND reported_at < ${period.to.toISOString()}::timestamptz
   `)) as unknown as RawTotals[];
 
   const [backlog] = (await db.execute(sql`
@@ -72,7 +74,7 @@ export async function getKpiSummary(period: Period): Promise<KpiSummary> {
       COALESCE(SUM(estimated_hours), 0)::float AS backlog_hours,
       COUNT(*)::int AS open_count
     FROM work_orders
-    WHERE status IN ('abierta', 'asignada', 'ejecucion', 'pausada')
+    WHERE organization_id = ${orgId} AND status IN ('abierta', 'asignada', 'ejecucion', 'pausada')
   `)) as unknown as Array<{ backlog_hours: number; open_count: number }>;
 
   const [pm] = (await db.execute(sql`
@@ -80,7 +82,7 @@ export async function getKpiSummary(period: Period): Promise<KpiSummary> {
       COUNT(*)::int AS scheduled,
       COUNT(*) FILTER (WHERE status = 'cerrada')::int AS executed
     FROM work_orders
-    WHERE type = 'preventivo'
+    WHERE organization_id = ${orgId} AND type = 'preventivo'
       AND status <> 'anulada'
       AND reported_at >= ${period.from.toISOString()}::timestamptz AND reported_at < ${period.to.toISOString()}::timestamptz
   `)) as unknown as Array<{ scheduled: number; executed: number }>;
@@ -124,6 +126,7 @@ export type TrendPoint = {
 
 /** Serie mensual de disponibilidad — el gráfico principal del dashboard. */
 export async function getAvailabilityTrend(months = 12): Promise<TrendPoint[]> {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     WITH meses AS (
       SELECT generate_series(
@@ -135,7 +138,7 @@ export async function getAvailabilityTrend(months = 12): Promise<TrendPoint[]> {
     activos AS (
       -- Mismo criterio que getKpiSummary: solo equipos, no agrupadores.
       SELECT COUNT(*)::float AS n FROM assets a
-      WHERE a.status <> 'baja'
+      WHERE a.organization_id = ${orgId} AND a.status <> 'baja'
         AND NOT EXISTS (SELECT 1 FROM assets c WHERE c.parent_id = a.id)
     ),
     datos AS (
@@ -149,7 +152,7 @@ export async function getAvailabilityTrend(months = 12): Promise<TrendPoint[]> {
           WHERE wo.type = 'correctivo' AND wo.finished_at IS NOT NULL AND wo.started_at IS NOT NULL
         ), NULL)::float AS mttr_hours
       FROM work_orders wo
-      WHERE wo.status <> 'anulada'
+      WHERE wo.organization_id = ${orgId} AND wo.status <> 'anulada'
       GROUP BY 1
     )
     SELECT
@@ -182,6 +185,7 @@ export async function getAvailabilityTrend(months = 12): Promise<TrendPoint[]> {
 
 /** Pareto de modos de falla: dónde está el 80% del dolor. */
 export async function getFailurePareto(period: Period) {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       fm.name AS label,
@@ -190,7 +194,8 @@ export async function getFailurePareto(period: Period) {
       COALESCE(SUM(wo.downtime_minutes), 0)::float / 60.0 AS downtime_hours
     FROM work_orders wo
     JOIN failure_modes fm ON fm.id = wo.failure_mode_id
-    WHERE wo.type = 'correctivo'
+    WHERE wo.organization_id = ${orgId}
+      AND wo.type = 'correctivo'
       AND wo.status <> 'anulada'
       AND wo.reported_at >= ${period.from.toISOString()}::timestamptz AND wo.reported_at < ${period.to.toISOString()}::timestamptz
     GROUP BY fm.id, fm.name, fm.category
@@ -227,6 +232,7 @@ export type BadActor = {
 
 /** Ranking de "malos actores": los activos que consumen el presupuesto. */
 export async function getBadActors(period: Period, limit = 10): Promise<BadActor[]> {
+  const orgId = await getActiveOrgId();
   const hours = calendarHours(period);
 
   const rows = (await db.execute(sql`
@@ -245,7 +251,8 @@ export async function getBadActors(period: Period, limit = 10): Promise<BadActor
       )::float AS mttr_hours
     FROM work_orders wo
     JOIN assets a ON a.id = wo.asset_id
-    WHERE wo.status <> 'anulada'
+    WHERE wo.organization_id = ${orgId}
+      AND wo.status <> 'anulada'
       AND wo.reported_at >= ${period.from.toISOString()}::timestamptz AND wo.reported_at < ${period.to.toISOString()}::timestamptz
     GROUP BY a.id, a.tag, a.name, a.criticality
     HAVING COUNT(*) FILTER (WHERE wo.type = 'correctivo') > 0
@@ -277,13 +284,15 @@ export async function getBadActors(period: Period, limit = 10): Promise<BadActor
 
 /** Distribución de OT por tipo — muestra si el mantenimiento es reactivo. */
 export async function getWorkOrderMix(period: Period) {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT
       type::text AS type,
       COUNT(*)::int AS count,
       COALESCE(SUM(labor_hours), 0)::float AS hours
     FROM work_orders
-    WHERE status <> 'anulada'
+    WHERE organization_id = ${orgId}
+      AND status <> 'anulada'
       AND reported_at >= ${period.from.toISOString()}::timestamptz AND reported_at < ${period.to.toISOString()}::timestamptz
     GROUP BY type
     ORDER BY count DESC

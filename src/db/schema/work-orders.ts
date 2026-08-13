@@ -7,6 +7,7 @@ import {
   serial,
   smallint,
   text,
+  uniqueIndex,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -31,7 +32,12 @@ export const workOrders = pgTable(
   "work_orders",
   {
     id: serial("id").primaryKey(),
-    code: varchar("code", { length: 24 }).notNull().unique(),
+    /**
+     * Organización dueña de la fila. Toda consulta debe filtrar por esta
+     * columna: es la frontera entre un buque y otro.
+     */
+    organizationId: text("organization_id").notNull(),
+    code: varchar("code", { length: 24 }).notNull(),
     assetId: integer("asset_id")
       .notNull()
       .references(() => assets.id, { onDelete: "restrict" }),
@@ -84,6 +90,8 @@ export const workOrders = pgTable(
       .defaultNow(),
   },
   (t) => ({
+    codePerOrg: uniqueIndex("wo_org_code_uq").on(t.organizationId, t.code),
+    orgIdx: index("wo_org_idx").on(t.organizationId),
     assetIdx: index("wo_asset_idx").on(t.assetId),
     statusIdx: index("wo_status_idx").on(t.status),
     typeIdx: index("wo_type_idx").on(t.type),

@@ -1,10 +1,11 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { workOrders } from "@/db/schema";
 import { advancePlanForWorkOrder } from "./advance-plan";
 import {
@@ -26,12 +27,12 @@ function toRow(data: WorkOrderInput) {
 }
 
 /** Correlativo OT-AAAA-NNNN por año, calculado en la BD para evitar colisiones. */
-async function nextCode(): Promise<string> {
+async function nextCode(orgId: string): Promise<string> {
   const year = new Date().getFullYear();
   const [row] = (await db.execute(sql`
     SELECT COALESCE(MAX(SUBSTRING(code FROM 9)::int), 0) + 1 AS next
     FROM work_orders
-    WHERE code LIKE ${`OT-${year}-%`}
+    WHERE organization_id = ${orgId} AND code LIKE ${`OT-${year}-%`}
   `)) as unknown as Array<{ next: number }>;
   return `OT-${year}-${String(row.next).padStart(4, "0")}`;
 }
@@ -46,8 +47,9 @@ export async function createWorkOrder(
 
   let code: string;
   try {
-    code = await nextCode();
-    await db.insert(workOrders).values({ ...toRow(parsed.data), code });
+    const orgId = await getActiveOrgId();
+    code = await nextCode(orgId);
+    await db.insert(workOrders).values({ ...toRow(parsed.data), code, organizationId: orgId });
   } catch {
     return { ok: false, message: "No se pudo crear la orden de trabajo." };
   }
@@ -65,10 +67,14 @@ export async function updateWorkOrder(
   await requireRole("tecnico");
   const parsed = workOrderSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return toActionState(parsed.error);
+  const orgId = await getActiveOrgId();
 
   try {
     await db.transaction(async (tx) => {
-      await tx.update(workOrders).set(toRow(parsed.data)).where(eq(workOrders.id, id));
+      await tx
+        .update(workOrders)
+        .set(toRow(parsed.data))
+        .where(and(eq(workOrders.id, id), eq(workOrders.organizationId, orgId)));
       if (parsed.data.status === "cerrada") {
         await advancePlanForWorkOrder(tx, id);
       }
@@ -98,7 +104,8 @@ export async function closeWorkOrder(id: number): Promise<ActionState> {
         SET status = 'cerrada',
             started_at = COALESCE(started_at, reported_at),
             finished_at = COALESCE(finished_at, now())
-        WHERE id = ${id} AND status NOT IN ('cerrada', 'anulada')
+        WHERE id = ${id} AND organization_id = ${await getActiveOrgId()}
+          AND status NOT IN ('cerrada', 'anulada')
       `);
       advanced = await advancePlanForWorkOrder(tx, id);
     });
@@ -119,7 +126,9 @@ export async function closeWorkOrder(id: number): Promise<ActionState> {
 
 export async function deleteWorkOrder(id: number): Promise<ActionState> {
   await requireRole("tecnico");
-  await db.delete(workOrders).where(eq(workOrders.id, id));
+  await db
+    .delete(workOrders)
+    .where(and(eq(workOrders.id, id), eq(workOrders.organizationId, await getActiveOrgId())));
   revalidatePath("/ordenes");
   revalidatePath("/dashboard");
   return { ok: true, message: "Orden eliminada." };

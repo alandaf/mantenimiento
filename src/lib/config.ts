@@ -45,6 +45,20 @@ export const SUPPORTED_LOCALES = [
 
 export const DEFAULT_ORG = "default";
 
+/**
+ * Organización de la que leer la configuración. Fuera de una sesión —el primer
+ * arranque, antes de que exista cuenta alguna— se cae a la organización por
+ * defecto en vez de fallar.
+ */
+async function resolveOrgId(): Promise<string> {
+  try {
+    const { getActiveOrgId } = await import("./org");
+    return await getActiveOrgId();
+  } catch {
+    return DEFAULT_ORG;
+  }
+}
+
 function env(name: string, fallback: string): string {
   const value = process.env[name]?.trim();
   return value && value.length > 0 ? value : fallback;
@@ -55,16 +69,20 @@ function env(name: string, fallback: string): string {
  * Así una instancia nueva funciona sin que nadie entre a configurarla.
  */
 export const getSettings = cache(async (): Promise<Settings> => {
+  // Cada instalación tiene su moneda: sin esto, cambiarla en un buque la
+  // cambiaría en toda la flota.
+  const orgId = await resolveOrgId();
+
   const [row] = await db
     .select()
     .from(settings)
-    .where(eq(settings.organizationId, DEFAULT_ORG))
+    .where(eq(settings.organizationId, orgId))
     .limit(1);
 
   if (row) return row;
 
   const seeded: Settings = {
-    organizationId: DEFAULT_ORG,
+    organizationId: orgId,
     installationName: env("APP_INSTALLATION_NAME", "Instalación"),
     currency: env("APP_CURRENCY", "CLP").toUpperCase(),
     locale: env("APP_LOCALE", "es-CL"),

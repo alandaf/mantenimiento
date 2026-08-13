@@ -5,6 +5,7 @@ import {
   failureModes,
   meterReadings,
   pmPlans,
+  settings,
   technicians,
   workOrders,
   type NewAsset,
@@ -13,6 +14,7 @@ import {
 } from "./schema";
 import { industrialDataset } from "./seeds/industrial";
 import { marineDataset } from "./seeds/marine";
+import { marineDataset2 } from "./seeds/marine2";
 import type { SeedDataset } from "./seeds/types";
 
 /**
@@ -52,19 +54,14 @@ function weighted<T>(entries: ReadonlyArray<readonly [T, number]>): T {
 
 const MONTHS_OF_HISTORY = 12;
 
-async function seed(dataset: SeedDataset) {
+async function seed(dataset: SeedDataset, orgId: string, orgName: string) {
+  const org = { organizationId: orgId };
   console.log(`\n→ Set de datos: ${dataset.label} (${dataset.key})`);
-
-  console.log("→ Limpiando tablas…");
-  await db.execute(sql`
-    TRUNCATE TABLE work_orders, pm_plans, ai_insights, assets, failure_modes, technicians
-    RESTART IDENTITY CASCADE
-  `);
 
   console.log("→ Modos de falla…");
   const modes = await db
     .insert(failureModes)
-    .values(dataset.failureModes.map((m) => ({ ...m })))
+    .values(dataset.failureModes.map((m) => ({ ...m, ...org })))
     .returning();
   const modeByCode = new Map(
     dataset.failureModes.map((m, i) => [m.code, modes[i]]),
@@ -73,7 +70,7 @@ async function seed(dataset: SeedDataset) {
   console.log("→ Dotación…");
   const techs = await db
     .insert(technicians)
-    .values(dataset.technicians.map((t) => ({ ...t })))
+    .values(dataset.technicians.map((t) => ({ ...t, ...org })))
     .returning();
   const fieldTechs = techs.filter((t) => t.role === "tecnico");
 
@@ -81,6 +78,7 @@ async function seed(dataset: SeedDataset) {
   const [root] = await db
     .insert(assets)
     .values({
+      ...org,
       tag: dataset.root.tag,
       name: dataset.root.name,
       criticality: "A",
@@ -98,6 +96,7 @@ async function seed(dataset: SeedDataset) {
     const [node] = await db
       .insert(assets)
       .values({
+        ...org,
         tag: group.group.tag,
         name: group.group.name,
         parentId: root.id,
@@ -111,6 +110,7 @@ async function seed(dataset: SeedDataset) {
       .insert(assets)
       .values(
         group.equipment.map<NewAsset>((eq) => ({
+          ...org,
           tag: eq.tag,
           name: eq.name,
           parentId: node.id,
@@ -155,6 +155,7 @@ async function seed(dataset: SeedDataset) {
         hours += profile.hoursPerDay * 15 * (0.6 + rand() * 0.8);
       }
       readings.push({
+        ...org,
         assetId: row.id,
         hours: hours.toFixed(1),
         takenAt,
@@ -193,6 +194,7 @@ async function seed(dataset: SeedDataset) {
             : null;
 
           return {
+            ...org,
             assetId: row.id,
             name: tpl.name,
             trigger: tpl.trigger,
@@ -269,6 +271,7 @@ async function seed(dataset: SeedDataset) {
       );
 
       orders.push({
+        ...org,
         code: "",
         assetId: row.id,
         type: "correctivo",
@@ -312,6 +315,7 @@ async function seed(dataset: SeedDataset) {
       const tech = pick(fieldTechs);
 
       orders.push({
+        ...org,
         code: "",
         assetId: row.id,
         type: "preventivo",
@@ -347,6 +351,7 @@ async function seed(dataset: SeedDataset) {
         const startedAt = new Date(reportedAt.getTime() + rand() * 8 * 3_600_000);
         const tech = pick(fieldTechs);
         orders.push({
+          ...org,
           code: "",
           assetId: row.id,
           type: "predictivo",
@@ -388,19 +393,64 @@ async function seed(dataset: SeedDataset) {
 `);
 }
 
-const requested = (process.argv[2] ?? process.env.SEED_DATASET ?? "industrial")
-  .trim()
-  .toLowerCase();
-const dataset = DATASETS[requested];
+/**
+ * Crea las organizaciones y siembra cada una.
+ *
+ * Dos buques por defecto: es la única forma de comprobar que el aislamiento
+ * funciona. Con una sola instalación, un filtro mal puesto pasa desapercibido
+ * porque siempre devuelve todo.
+ */
+const FLEET: Array<{ slug: string; name: string; dataset: SeedDataset }> = [
+  { slug: "bahia-valparaiso", name: "M/N Bahía de Valparaíso", dataset: marineDataset },
+  { slug: "estrecho-magallanes", name: "M/N Estrecho de Magallanes", dataset: marineDataset2 },
+];
 
-if (!dataset) {
-  console.error(
-    `Set de datos desconocido: "${requested}". Disponibles: ${Object.keys(DATASETS).join(", ")}`,
+async function main() {
+  const requested = (process.argv[2] ?? process.env.SEED_DATASET ?? "flota")
+    .trim()
+    .toLowerCase();
+
+  console.log("→ Limpiando tablas…");
+  await db.execute(sql`
+    TRUNCATE TABLE work_orders, pm_plans, meter_readings, ai_insights,
+                   assets, failure_modes, technicians, settings
+    RESTART IDENTITY CASCADE
+  `);
+  await db.execute(sql`DELETE FROM member`);
+  await db.execute(sql`DELETE FROM organization`);
+
+  const targets =
+    requested === "industrial"
+      ? [{ slug: "planta-quilicura", name: "Planta Gálvanica Quilicura", dataset: industrialDataset }]
+      : FLEET;
+
+  for (const t of targets) {
+    const [org] = (await db.execute(sql`
+      INSERT INTO organization (id, name, slug, created_at)
+      VALUES (${crypto.randomUUID()}, ${t.name}, ${t.slug}, now())
+      RETURNING id
+    `)) as unknown as Array<{ id: string }>;
+
+    await db.insert(settings).values({
+      organizationId: org.id,
+      installationName: t.name,
+      currency: "CLP",
+      locale: "es-CL",
+    });
+
+    await seed(t.dataset, org.id, t.name);
+  }
+
+  console.log(
+    `
+✔ ${targets.length} instalación(es) creada(s). Crea las cuentas con:
+` +
+      `  pnpm tsx scripts/create-admin.ts "Nombre" correo@dominio.cl "clave-larga" <slug>
+`,
   );
-  process.exit(1);
 }
 
-seed(dataset)
+main()
   .catch((err) => {
     console.error("✖ Error en el seed:", err);
     process.exitCode = 1;

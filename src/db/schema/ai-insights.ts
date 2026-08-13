@@ -21,6 +21,11 @@ export const aiInsights = pgTable(
   "ai_insights",
   {
     id: serial("id").primaryKey(),
+    /**
+     * Organización dueña de la fila. Toda consulta debe filtrar por esta
+     * columna: es la frontera entre un buque y otro.
+     */
+    organizationId: text("organization_id").notNull(),
     /** "priorizacion" | "rca" | "resumen_ejecutivo" … */
     scope: varchar("scope", { length: 40 }).notNull(),
     /** Id de la entidad analizada (OT, activo). Nulo si es global. */
@@ -37,6 +42,7 @@ export const aiInsights = pgTable(
       .defaultNow(),
   },
   (t) => ({
+    orgIdx: index("ai_org_idx").on(t.organizationId),
     scopeIdx: index("ai_scope_idx").on(t.scope, t.refId),
   }),
 );

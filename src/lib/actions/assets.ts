@@ -1,10 +1,11 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { assets } from "@/db/schema";
 import { assetSchema, toActionState, type ActionState } from "@/lib/validation";
 
@@ -21,7 +22,7 @@ export async function createAsset(
   if (!parsed.success) return toActionState(parsed.error);
 
   try {
-    await db.insert(assets).values(parsed.data);
+    await db.insert(assets).values({ ...parsed.data, organizationId: await getActiveOrgId() });
   } catch (err) {
     return { ok: false, message: uniqueTagMessage(err) };
   }
@@ -50,7 +51,12 @@ export async function updateAsset(
   }
 
   try {
-    await db.update(assets).set(parsed.data).where(eq(assets.id, id));
+    await db
+      .update(assets)
+      .set(parsed.data)
+      // El filtro por organización impide editar un activo de otra instalación
+      // aunque se adivine su id.
+      .where(and(eq(assets.id, id), eq(assets.organizationId, await getActiveOrgId())));
   } catch (err) {
     return { ok: false, message: uniqueTagMessage(err) };
   }
@@ -63,7 +69,9 @@ export async function updateAsset(
 export async function deleteAsset(id: number): Promise<ActionState> {
   await requireRole("planificador");
   try {
-    await db.delete(assets).where(eq(assets.id, id));
+    await db
+      .delete(assets)
+      .where(and(eq(assets.id, id), eq(assets.organizationId, await getActiveOrgId())));
   } catch {
     // La FK de work_orders es RESTRICT: el histórico de OT no se pierde nunca.
     return {

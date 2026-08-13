@@ -3,6 +3,7 @@ import { getFormatters } from "@/lib/config";
 import Link from "next/link";
 import { Badge, Button, EmptyState, PageHeader, Panel} from "@/components/ui";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 
 export const dynamic = "force-dynamic";
 
@@ -21,16 +22,18 @@ type Row = {
 };
 
 export default async function AssetsPage() {
+  const orgId = await getActiveOrgId();
   const { money } = await getFormatters();
   // CTE recursiva: la jerarquía se recorre en la BD y llega ya ordenada por
   // rama, con la profundidad lista para indentar el listado.
   const rows = (await db.execute(sql`
     WITH RECURSIVE arbol AS (
       SELECT a.id, a.parent_id, 0 AS depth, a.tag::text AS path
-      FROM assets a WHERE a.parent_id IS NULL
+      FROM assets a WHERE a.organization_id = ${orgId} AND a.parent_id IS NULL
       UNION ALL
       SELECT a.id, a.parent_id, t.depth + 1, t.path || ' / ' || a.tag
       FROM assets a JOIN arbol t ON a.parent_id = t.id
+      WHERE a.organization_id = ${orgId}
     )
     SELECT
       a.id, a.tag, a.name,

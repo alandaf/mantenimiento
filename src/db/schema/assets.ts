@@ -6,6 +6,7 @@ import {
   pgTable,
   serial,
   text,
+  uniqueIndex,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -19,7 +20,12 @@ export const assets = pgTable(
   "assets",
   {
     id: serial("id").primaryKey(),
-    tag: varchar("tag", { length: 32 }).notNull().unique(),
+    /**
+     * Organización dueña de la fila. Toda consulta debe filtrar por esta
+     * columna: es la frontera entre un buque y otro.
+     */
+    organizationId: text("organization_id").notNull(),
+    tag: varchar("tag", { length: 32 }).notNull(),
     name: varchar("name", { length: 160 }).notNull(),
     parentId: integer("parent_id").references((): any => assets.id, {
       onDelete: "set null",
@@ -44,6 +50,9 @@ export const assets = pgTable(
       .defaultNow(),
   },
   (t) => ({
+    // Único por organización: el EQ-101 de un buque no choca con el de otro.
+    tagPerOrg: uniqueIndex("assets_org_tag_uq").on(t.organizationId, t.tag),
+    orgIdx: index("assets_org_idx").on(t.organizationId),
     parentIdx: index("assets_parent_idx").on(t.parentId),
     criticalityIdx: index("assets_criticality_idx").on(t.criticality),
   }),

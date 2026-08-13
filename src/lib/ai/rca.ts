@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { db } from "@/db";
+import { getActiveOrgId } from "@/lib/org";
 import { getFormatters } from "@/lib/config";
 import { aiInsights } from "@/db/schema";
 import { getFailurePattern, type FailurePattern } from "@/lib/kpi/patterns";
@@ -251,6 +252,7 @@ export async function analyzeRootCause(patternKey: string): Promise<RcaRun> {
   const result = outputSchema.parse(JSON.parse(text));
 
   await db.insert(aiInsights).values({
+    organizationId: await getActiveOrgId(),
     scope: "rca",
     refId: pattern.assetId,
     model: AI_MODEL,

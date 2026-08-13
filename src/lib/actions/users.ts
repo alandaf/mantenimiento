@@ -1,12 +1,13 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { getActiveOrgId } from "@/lib/org";
 import { requireRole, ROLES, type Role } from "@/lib/session";
 import type { ActionState } from "@/lib/validation";
 
@@ -47,10 +48,17 @@ export async function createUser(
   const { name, email, password, role } = parsed.data;
 
   try {
-    await auth.api.createUser({
+    const created = await auth.api.createUser({
       body: { name, email, password, role },
       headers: await headers(),
     });
+
+    // Sin la pertenencia la cuenta existe pero no ve nada: la organización es
+    // lo que le da acceso a los datos del buque.
+    await db.execute(sql`
+      INSERT INTO member (id, organization_id, user_id, role, created_at)
+      VALUES (${crypto.randomUUID()}, ${await getActiveOrgId()}, ${created.user.id}, 'member', now())
+    `);
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
     if (/exist|duplicate|unique/i.test(raw)) {
@@ -81,6 +89,9 @@ export async function changeUserRole(
   }
   // El rol llega como string desde el cliente; se valida contra la lista real
   // antes de estrecharlo, para no confiar en lo que envía el navegador.
+  if (!(await assertSameOrg(userId))) {
+    return { ok: false, message: "No puedes cambiar el rol de alguien de otra instalación." };
+  }
   if (!ROLE_KEYS.includes(role as Role)) {
     return { ok: false, message: "Rol desconocido." };
   }
@@ -111,6 +122,9 @@ export async function toggleUserAccess(
 ): Promise<ActionState> {
   const session = await requireRole("admin");
 
+  if (!(await assertSameOrg(userId))) {
+    return { ok: false, message: "No puedes cambiar el acceso de alguien de otra instalación." };
+  }
   if (session.user.id === userId) {
     return { ok: false, message: "No puedes deshabilitar tu propia cuenta." };
   }
@@ -142,17 +156,35 @@ export async function toggleUserAccess(
 /** Usuarios de la instalación. */
 export async function listUsers() {
   await requireRole("admin");
-  return db
-    .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      banned: user.banned,
-      createdAt: user.createdAt,
-    })
-    .from(user)
-    .orderBy(user.createdAt);
+  const orgId = await getActiveOrgId();
+
+  // Solo la gente de esta instalación: el administrador de un buque no tiene
+  // por qué ver —ni tocar— la tripulación de otro.
+  return (await db.execute(sql`
+    SELECT u.id, u.name, u.email, u.role, u.banned, u.created_at AS "createdAt"
+    FROM "user" u
+    JOIN member m ON m.user_id = u.id
+    WHERE m.organization_id = ${orgId}
+    ORDER BY u.created_at
+  `)) as unknown as Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string | null;
+    banned: boolean | null;
+    createdAt: Date;
+  }>;
+}
+
+/** Comprueba que un usuario pertenece a la instalación activa. */
+async function assertSameOrg(userId: string): Promise<boolean> {
+  const orgId = await getActiveOrgId();
+  const [row] = (await db.execute(sql`
+    SELECT 1 AS ok FROM member
+    WHERE user_id = ${userId} AND organization_id = ${orgId}
+    LIMIT 1
+  `)) as unknown as Array<{ ok: number }>;
+  return Boolean(row);
 }
 
 /** Cambia la contraseña de otra cuenta — para el cadete que la olvidó. */
