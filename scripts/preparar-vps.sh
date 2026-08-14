@@ -1,21 +1,39 @@
 #!/usr/bin/env bash
 #
-# Prepara un VPS Ubuntu/Debian recién creado para alojar PMS SIMARP.
+# Prepara un VPS Ubuntu/Debian para alojar PMS SIMARP.
 # Se ejecuta UNA vez, en el servidor, como root:
 #
 #   bash preparar-vps.sh
 #
-# Deja instalado Docker, un usuario sin privilegios para desplegar, el
-# cortafuegos cerrado salvo 22/80/443, y el repositorio clonado.
+# Deja instalado Docker, un usuario sin privilegios para desplegar y el
+# repositorio clonado.
+#
+# NO toca nada que ya esté funcionando. Si el servidor ya presta otros
+# servicios, se limita a informar: activar un cortafuegos o reconfigurar un
+# proxy ajeno a ciegas es la forma más rápida de tumbar lo que ya andaba.
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/alandaf/mantenimiento.git}"
 DEPLOY_USER="${DEPLOY_USER:-simarp}"
 DEPLOY_DIR="/opt/simarp"
 
+echo "→ Reconociendo el servidor…"
+OCUPA_80="$(ss -lntp 2>/dev/null | awk '$4 ~ /:80$/ {print $NF}' | head -1 || true)"
+OCUPA_443="$(ss -lntp 2>/dev/null | awk '$4 ~ /:443$/ {print $NF}' | head -1 || true)"
+PROXY_EXISTENTE=""
+if [ -n "$OCUPA_80$OCUPA_443" ]; then
+  PROXY_EXISTENTE="si"
+  echo "  · Los puertos 80/443 ya están ocupados:"
+  [ -n "$OCUPA_80" ]  && echo "      80  → $OCUPA_80"
+  [ -n "$OCUPA_443" ] && echo "      443 → $OCUPA_443"
+  echo "  · Se usará el proxy existente. Caddy no se levantará."
+else
+  echo "  · Puertos 80/443 libres: Caddy puede encargarse del TLS."
+fi
+
 echo "→ Paquetes base…"
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl git ufw
+apt-get install -y -qq ca-certificates curl git
 
 echo "→ Docker…"
 if ! command -v docker >/dev/null; then
@@ -41,13 +59,23 @@ fi
 usermod -aG docker "$DEPLOY_USER"
 
 echo "→ Cortafuegos…"
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
-# Postgres NO se abre: solo lo alcanza la aplicación, por la red interna de
-# compose. Publicarlo al exterior es cómodo un día y una filtración al
-# siguiente.
-ufw --force enable
+if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
+  echo "  · ufw ya está activo. No se toca: cambiar reglas de un servidor en"
+  echo "    producción a ciegas puede dejar fuera lo que ya funcionaba —incluso"
+  echo "    tu propia sesión SSH—. Revisa a mano que 80 y 443 estén permitidos."
+elif [ -n "$PROXY_EXISTENTE" ]; then
+  echo "  · El servidor ya presta servicios y el cortafuegos no está activo."
+  echo "    No se activa desde aquí: hazlo tú cuando sepas qué puertos usan."
+else
+  apt-get install -y -qq ufw
+  ufw allow 22/tcp
+  ufw allow 80/tcp
+  ufw allow 443/tcp
+  # Postgres NO se abre: solo lo alcanza la aplicación, por la red interna de
+  # compose. Publicarlo al exterior es cómodo un día y una filtración al
+  # siguiente.
+  ufw --force enable
+fi
 
 echo "→ Repositorio en $DEPLOY_DIR…"
 mkdir -p "$DEPLOY_DIR"
@@ -72,9 +100,24 @@ Falta, como $DEPLOY_USER:
        nano .env.prod
        chmod 600 .env.prod
 
-  3. Levantar:
+  3. Levantar (elige según lo detectado arriba):
+
+     $( [ -n "$PROXY_EXISTENTE" ] \
+        && echo "Hay un proxy en 80/443 → la aplicación escucha solo en 127.0.0.1" \
+        || echo "Puertos libres → Caddy se encarga del certificado" )
+
        docker compose -p simarp -f docker/compose.yml -f docker/compose.prod.yml \\
+         -f docker/$( [ -n "$PROXY_EXISTENTE" ] && echo "compose.host-proxy.yml" || echo "compose.caddy.yml" ) \\
          --env-file .env.prod up -d --build
+$( [ -n "$PROXY_EXISTENTE" ] && cat <<'EXTRA'
+
+  3b. Publicar el sitio en el proxy existente:
+       sudo cp docker/nginx-pms.simarp.net.conf /etc/nginx/sites-available/pms.simarp.net
+       sudo ln -s /etc/nginx/sites-available/pms.simarp.net /etc/nginx/sites-enabled/
+       sudo nginx -t && sudo systemctl reload nginx
+       sudo certbot --nginx -d pms.simarp.net
+EXTRA
+)
 
   4. Crear el operador de plataforma:
        docker compose -p simarp -f docker/compose.yml -f docker/compose.prod.yml \\

@@ -49,31 +49,11 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # Caddy termina TLS y es lo único publicado al exterior.
-  #
-  # `web` no expone puertos: sin este servicio no se llega a la aplicación desde
-  # fuera del host. Publicar el 3000 "temporalmente para probar" dejaría la
-  # aplicación accesible en claro, sin cifrar, mientras dure ese temporal.
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:?falta SITE_ADDRESS}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # Los certificados sobreviven a un redespliegue. Sin esto, cada
-      # `up` volvería a pedirlos y Let's Encrypt limita cuántas veces al día.
-      - caddy_data:/data
-      - caddy_config:/config
-      - caddy_logs:/var/log/caddy
-    depends_on:
-      - web
-
-volumes:
-  caddy_data:
-  caddy_config:
-  caddy_logs:
+    # Sin puertos publicados a propósito. Quién termina TLS y expone la
+    # aplicación se elige con un archivo adicional, según lo que haya en el
+    # servidor:
+    #
+    #   compose.caddy.yml       servidor limpio: Caddy pide el certificado solo
+    #   compose.host-proxy.yml  ya hay un proxy (nginx, Traefik…) en 80/443
+    #
+    # Sin uno de los dos, la aplicación solo se alcanza desde dentro del host.
