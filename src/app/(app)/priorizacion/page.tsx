@@ -168,8 +168,8 @@ export default async function PrioritizacionPage() {
                     <th className="px-5 py-2.5 font-semibold">OT</th>
                     <th className="px-5 py-2.5 font-semibold">Activo</th>
                     <th className="px-5 py-2.5 font-semibold"><Term k="criticidad">Criticidad</Term></th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Días</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Fallas 90d</th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="backlog">Días</Term></th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="fallas_recientes">Fallas 90d</Term></th>
                     <th className="px-5 py-2.5 text-right font-semibold"><Term k="costo_parada">Parada/h</Term></th>
                     <th className="px-5 py-2.5 text-right font-semibold"><Term k="score_riesgo">Score</Term></th>
                   </tr>

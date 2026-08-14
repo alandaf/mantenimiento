@@ -1,4 +1,5 @@
 import { Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
+import { Term } from "@/components/term";
 import { getFormatters } from "@/lib/config";
 import { requireRole } from "@/lib/session";
 import { getAssetMeters } from "@/lib/kpi/meter-queries";
@@ -41,9 +42,9 @@ export default async function HorometrosPage() {
                 <thead>
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">Activo</th>
-                    <th className="px-5 py-2.5 font-semibold">Crit.</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Horómetro</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Ritmo</th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="criticidad">Crit.</Term></th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="horometro">Horómetro</Term></th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="ritmo_uso">Ritmo</Term></th>
                     <th className="px-5 py-2.5 text-right font-semibold">
                       Última lectura
                     </th>

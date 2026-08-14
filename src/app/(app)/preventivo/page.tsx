@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFormatters } from "@/lib/config";
 import { Badge, EmptyState, KpiCard, PageHeader, Panel } from "@/components/ui";
+import { Term } from "@/components/term";
 import { getPmPlanStatuses } from "@/lib/kpi/meter-queries";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ export default async function PreventivoPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label="Vencidas"
+            term="rutina_vencida"
             value={String(overdue.length)}
             tone={overdue.length > 0 ? "bad" : "good"}
             footnote="Requieren acción inmediata"
@@ -49,11 +51,13 @@ export default async function PreventivoPage() {
           />
           <KpiCard
             label="Por horas de marcha"
+            term="disparador"
             value={String(byHours.length)}
             footnote="Rutinas que el calendario no captura"
           />
           <KpiCard
             label="Rutinas activas"
+            term="preventivo"
             value={String(plans.length)}
             footnote="En toda la instalación"
           />
@@ -71,12 +75,14 @@ export default async function PreventivoPage() {
                 <thead>
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">Rutina</th>
-                    <th className="px-5 py-2.5 font-semibold">Disparador</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">
-                      Horas restantes
+                    <th className="px-5 py-2.5 font-semibold">
+                      <Term k="disparador">Disparador</Term>
                     </th>
                     <th className="px-5 py-2.5 text-right font-semibold">
-                      Vence (estimado)
+                      <Term k="vida_util_restante">Horas restantes</Term>
+                    </th>
+                    <th className="px-5 py-2.5 text-right font-semibold">
+                      <Term k="ritmo_uso">Vence (estimado)</Term>
                     </th>
                     <th className="px-5 py-2.5 text-right font-semibold">Estado</th>
                   </tr>

@@ -96,6 +96,34 @@ export const GLOSSARY = {
     title: "Modo de falla",
     body: "La forma concreta en que un equipo deja de funcionar: fuga de sello, desgaste de rodamiento, falla eléctrica. Clasificarlo permite ver que la misma avería se repite en distintos equipos, que es donde suele estar el ahorro grande.",
   },
+  rutina_vencida: {
+    title: "Rutina vencida",
+    body: "Mantención programada cuya fecha ya pasó y todavía no se ejecuta. No significa que el equipo vaya a fallar mañana, pero cada día que sigue vencida el riesgo aumenta y la garantía del fabricante puede quedar comprometida.",
+  },
+  disparador: {
+    title: "Disparador de la rutina",
+    body: "Qué determina cuándo toca la mantención: el calendario (cada 120 días), las horas de uso (cada 1.000 horas) o lo que llegue primero. Lo tercero es lo habitual en máquinas: un equipo que trabajó el doble llega a las horas antes de que llegue la fecha, y esperar al calendario sería tarde.",
+  },
+  ritmo_uso: {
+    title: "Ritmo de uso",
+    body: "Cuántas horas al día trabaja el equipo en promedio, calculado con las lecturas recientes del contador. Es lo que permite anticipar la fecha real de la próxima mantención: si el ritmo sube, la fecha se adelanta sola.",
+  },
+  prioridad: {
+    title: "Prioridad",
+    body: "Urgencia asignada por quien reportó la falla, de 1 (urgente) a 4 (baja). Es un juicio humano y del momento; el score de riesgo la corrige con datos objetivos como la criticidad del equipo y cuánto lleva esperando.",
+  },
+  estado_ot: {
+    title: "Estado de la orden",
+    body: "Dónde está el trabajo: abierta (reportada, sin asignar), asignada (con responsable), en ejecución, pausada (esperando repuesto o ventana de detención), cerrada o anulada. Solo las cerradas cuentan para los indicadores de tiempo y costo.",
+  },
+  tipo_ot: {
+    title: "Tipo de orden",
+    body: "Correctivo es reparar lo que ya falló; preventivo es intervenir antes según plan; predictivo es actuar cuando las mediciones anuncian la falla; mejora es modificar el equipo para que deje de fallar. La proporción entre ellos dice más sobre la gestión que cualquier otro número.",
+  },
+  fallas_recientes: {
+    title: "Fallas en 90 días",
+    body: "Cuántas veces falló ese equipo en el último trimestre. Dos o más suele indicar que se está tratando el síntoma y no la causa: ahí conviene un análisis de causa raíz antes de seguir reparando.",
+  },
   vida_util_restante: {
     title: "Vida útil restante",
     body: "Horas o días estimados antes de que toque la próxima intervención, proyectados según el ritmo de uso real de las últimas semanas. Si el equipo empieza a trabajar más, la fecha se adelanta sola.",

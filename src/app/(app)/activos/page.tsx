@@ -74,13 +74,13 @@ export default async function AssetsPage() {
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">Activo</th>
                     <th className="px-5 py-2.5 font-semibold"><Term k="criticidad">Criticidad</Term></th>
-                    <th className="px-5 py-2.5 font-semibold">Estado</th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="estado_ot">Estado</Term></th>
                     <th className="px-5 py-2.5 font-semibold">Fabricante</th>
                     <th className="px-5 py-2.5 text-right font-semibold">
                       Costo parada/h
                     </th>
-                    <th className="px-5 py-2.5 text-right font-semibold">OT abiertas</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Fallas 90d</th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="backlog">OT abiertas</Term></th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="fallas_recientes">Fallas 90d</Term></th>
                     <th className="px-5 py-2.5" />
                   </tr>
                 </thead>

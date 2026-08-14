@@ -9,6 +9,7 @@ import {
   Panel,
   PriorityTag,
 } from "@/components/ui";
+import { Term } from "@/components/term";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
 import { formatHours } from "@/lib/kpi/formulas";
@@ -180,12 +181,12 @@ export default async function WorkOrdersPage({
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">OT</th>
                     <th className="px-5 py-2.5 font-semibold">Trabajo</th>
-                    <th className="px-5 py-2.5 font-semibold">Tipo</th>
-                    <th className="px-5 py-2.5 font-semibold">Estado</th>
-                    <th className="px-5 py-2.5 font-semibold">Prioridad</th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="tipo_ot">Tipo</Term></th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="estado_ot">Estado</Term></th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="prioridad">Prioridad</Term></th>
                     <th className="px-5 py-2.5 font-semibold">Responsable</th>
                     <th className="px-5 py-2.5 text-right font-semibold">Reportado</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Reparación</th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="mttr">Reparación</Term></th>
                     <th className="px-5 py-2.5" />
                   </tr>
                 </thead>
