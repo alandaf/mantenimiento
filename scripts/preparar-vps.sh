@@ -14,8 +14,8 @@
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/alandaf/mantenimiento.git}"
-DEPLOY_USER="${DEPLOY_USER:-simarp}"
-DEPLOY_DIR="/opt/simarp"
+DEPLOY_USER="${DEPLOY_USER:-pms}"
+DEPLOY_DIR="/opt/pms"
 
 echo "→ Reconociendo el servidor…"
 OCUPA_80="$(ss -lntp 2>/dev/null | awk '$4 ~ /:80$/ {print $NF}' | head -1 || true)"
@@ -106,7 +106,7 @@ Falta, como $DEPLOY_USER:
         && echo "Hay un proxy en 80/443 → la aplicación escucha solo en 127.0.0.1" \
         || echo "Puertos libres → Caddy se encarga del certificado" )
 
-       docker compose -p simarp -f docker/compose.yml -f docker/compose.prod.yml \\
+       docker compose -p pms -f docker/compose.yml -f docker/compose.prod.yml \\
          -f docker/$( [ -n "$PROXY_EXISTENTE" ] && echo "compose.host-proxy.yml" || echo "compose.caddy.yml" ) \\
          --env-file .env.prod up -d --build
 $( [ -n "$PROXY_EXISTENTE" ] && cat <<'EXTRA'
@@ -120,7 +120,7 @@ EXTRA
 )
 
   4. Crear el operador de plataforma:
-       docker compose -p simarp -f docker/compose.yml -f docker/compose.prod.yml \\
+       docker compose -p pms -f docker/compose.yml -f docker/compose.prod.yml \\
          --env-file .env.prod run --rm migrate \\
          pnpm tsx scripts/create-superadmin.ts "Tu Nombre" tu@correo.cl "clave-larga"
 

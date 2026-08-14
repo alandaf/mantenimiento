@@ -48,7 +48,7 @@ jobs:
             # PROXY_FILE elige quién expone la aplicación:
             #   compose.host-proxy.yml  si el servidor ya tiene nginx/Traefik
             #   compose.caddy.yml       si los puertos 80/443 están libres
-            docker compose -p simarp \
+            docker compose -p pms \
               -f docker/compose.yml -f docker/compose.prod.yml \
               -f "docker/\${PROXY_FILE:-compose.host-proxy.yml}" \
               --env-file .env.prod up -d --build

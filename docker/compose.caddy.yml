@@ -1,6 +1,6 @@
 # Caddy delante, para un servidor donde nadie más usa los puertos 80 y 443.
 #
-#   docker compose -p simarp \
+#   docker compose -p pms \
 #     -f docker/compose.yml -f docker/compose.prod.yml -f docker/compose.caddy.yml \
 #     --env-file .env.prod up -d --build
 #

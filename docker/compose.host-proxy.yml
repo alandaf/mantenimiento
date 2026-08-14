@@ -1,7 +1,7 @@
 # Para un servidor que ya tiene un proxy inverso propio en los puertos 80/443
 # —nginx, Traefik, Nginx Proxy Manager— sirviendo otros sitios.
 #
-#   docker compose -p simarp \
+#   docker compose -p pms \
 #     -f docker/compose.yml -f docker/compose.prod.yml -f docker/compose.host-proxy.yml \
 #     --env-file .env.prod up -d --build
 #
