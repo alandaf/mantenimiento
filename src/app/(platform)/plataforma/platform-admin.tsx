@@ -5,6 +5,7 @@ import { Field, FormMessage, Input, Select, SubmitButton } from "@/components/fo
 import {
   createInstallation,
   createInstallationAdmin,
+  updateInstallation,
 } from "@/lib/actions/platform";
 import type { ActionState } from "@/lib/validation";
 
@@ -100,6 +101,93 @@ export function CreateInstallationForm() {
       </Field>
 
       <SubmitButton>Crear instalación</SubmitButton>
+    </form>
+  );
+}
+
+/**
+ * Edición en sitio de una instalación. Se despliega bajo la fila para no perder
+ * de vista la tabla: quien corrige un nombre suele estar comparándolo con el
+ * resto de la flota.
+ */
+export function EditInstallation({
+  installation,
+}: {
+  installation: {
+    id: string;
+    name: string;
+    slug: string;
+    currency: string;
+    locale: string;
+  };
+}) {
+  const [state, formAction] = useActionState(updateInstallation, INITIAL);
+  const [open, setOpen] = useState(false);
+
+  // Al guardar se cierra el formulario: dejarlo abierto con los campos ya
+  // guardados hace dudar de si el cambio se aplicó.
+  useEffect(() => {
+    if (state.ok) setOpen(false);
+  }, [state]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-md border border-ink-700 px-2 py-1 text-[11px] text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
+      >
+        Editar
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={formAction}
+      className="space-y-3 rounded-lg border border-ink-700 bg-ink-850 p-3 text-left"
+    >
+      <input type="hidden" name="id" value={installation.id} />
+      <FormMessage state={state} />
+
+      <Field label="Nombre" name="name" errors={state.errors}>
+        <Input name="name" required defaultValue={installation.name} />
+      </Field>
+
+      <Field
+        label="Identificador"
+        name="slug"
+        hint="No se puede cambiar: entra en URLs y enlaces ya guardados."
+      >
+        <Input value={installation.slug} readOnly disabled />
+      </Field>
+
+      <Field label="Moneda" name="currency" errors={state.errors}>
+        <Select
+          name="currency"
+          defaultValue={installation.currency}
+          options={CURRENCIES}
+        />
+      </Field>
+
+      <Field label="Formato regional" name="locale" errors={state.errors}>
+        <Select
+          name="locale"
+          defaultValue={installation.locale}
+          options={LOCALES}
+        />
+      </Field>
+
+      <div className="flex items-center gap-2">
+        <SubmitButton>Guardar</SubmitButton>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-lg border border-ink-700 px-3 py-2 text-sm text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
+        >
+          Cancelar
+        </button>
+      </div>
     </form>
   );
 }

@@ -169,10 +169,67 @@ export async function createInstallationAdmin(
   };
 }
 
+const updateSchema = installationSchema
+  .omit({ slug: true })
+  .extend({ id: z.string().trim().min(1) });
+
+/**
+ * Edición de una instalación ya creada.
+ *
+ * El identificador no está: es la identidad estable de la instalación —entra en
+ * índices y URLs— y cambiarlo rompería enlaces guardados sin ganar nada. El
+ * nombre visible sí se corrige, que es lo que de verdad cambia (una naviera
+ * rebautiza un buque, o el alta se hizo con una errata).
+ */
+export async function updateInstallation(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireSuperadmin();
+
+  const parsed = updateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Revisa los campos marcados.",
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const { id, name, currency, locale } = parsed.data;
+
+  const [org] = (await db.execute(
+    sql`SELECT id FROM organization WHERE id = ${id} LIMIT 1`,
+  )) as unknown as Array<{ id: string }>;
+
+  if (!org) return { ok: false, message: "Esa instalación ya no existe." };
+
+  // El nombre vive en dos sitios —`organization` lo usa la capa de cuentas y
+  // `settings` la aplicación— así que se escriben los dos. Si solo se tocara
+  // uno, la consola y el buque acabarían mostrando nombres distintos.
+  await db.execute(sql`UPDATE organization SET name = ${name} WHERE id = ${id}`);
+
+  await db
+    .insert(settings)
+    .values({ organizationId: id, installationName: name, currency, locale })
+    .onConflictDoUpdate({
+      target: settings.organizationId,
+      set: { installationName: name, currency, locale },
+    });
+
+  // La moneda alcanza a todas las pantallas y al PDF del cliente.
+  revalidatePath("/plataforma");
+  revalidatePath("/", "layout");
+
+  return { ok: true, message: `${name} actualizada.` };
+}
+
 export type Installation = {
   id: string;
   name: string;
   slug: string;
+  currency: string;
+  locale: string;
   createdAt: Date;
   members: number;
   admins: number;
@@ -186,7 +243,12 @@ export async function listInstallations(): Promise<Installation[]> {
 
   const rows = (await db.execute(sql`
     SELECT
-      o.id, o.name, o.slug,
+      o.id, o.slug,
+      -- El nombre operativo es el de settings: es el que edita el propio buque
+      -- desde /configuracion, así que manda sobre el de organization.
+      COALESCE(s.installation_name, o.name) AS name,
+      COALESCE(s.currency, 'CLP') AS currency,
+      COALESCE(s.locale, 'es-CL') AS locale,
       to_char(o.created_at, 'YYYY-MM-DD"T"HH24:MI:SSZ') AS "createdAt",
       (SELECT COUNT(*) FROM member m WHERE m.organization_id = o.id)::int AS members,
       (SELECT COUNT(*) FROM member m
@@ -195,6 +257,7 @@ export async function listInstallations(): Promise<Installation[]> {
       (SELECT COUNT(*) FROM assets a WHERE a.organization_id = o.id)::int AS assets,
       (SELECT COUNT(*) FROM work_orders w WHERE w.organization_id = o.id)::int AS "workOrders"
     FROM organization o
+    LEFT JOIN settings s ON s.organization_id = o.id
     ORDER BY o.created_at
   `)) as unknown as Array<Omit<Installation, "createdAt"> & { createdAt: string }>;
 

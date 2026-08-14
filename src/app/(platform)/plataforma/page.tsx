@@ -1,6 +1,10 @@
 import { EmptyState, PageHeader, Panel } from "@/components/ui";
 import { listInstallations } from "@/lib/actions/platform";
-import { CreateAdminForm, CreateInstallationForm } from "./platform-admin";
+import {
+  CreateAdminForm,
+  CreateInstallationForm,
+  EditInstallation,
+} from "./platform-admin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Plataforma" };
@@ -36,10 +40,12 @@ export default async function PlataformaPage() {
                 <thead>
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">Instalación</th>
+                    <th className="px-5 py-2.5 font-semibold">Regional</th>
                     <th className="px-5 py-2.5 text-right font-semibold">Cuentas</th>
                     <th className="px-5 py-2.5 text-right font-semibold">Activos</th>
                     <th className="px-5 py-2.5 text-right font-semibold">Órdenes</th>
                     <th className="px-5 py-2.5 font-semibold">Alta</th>
+                    <th className="px-5 py-2.5 text-right font-semibold">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-800">
@@ -56,6 +62,10 @@ export default async function PlataformaPage() {
                           {i.slug}
                         </span>
                       </td>
+                      <td className="px-5 py-3 text-xs text-ink-400">
+                        {i.currency}
+                        <span className="mt-0.5 block text-[11px]">{i.locale}</span>
+                      </td>
                       <td className="num px-5 py-3 text-right text-xs text-ink-300">
                         {i.members}
                       </td>
@@ -67,6 +77,9 @@ export default async function PlataformaPage() {
                       </td>
                       <td className="num px-5 py-3 text-xs text-ink-400">
                         {dateFmt.format(i.createdAt)}
+                      </td>
+                      <td className="px-5 py-3 text-right align-top">
+                        <EditInstallation installation={i} />
                       </td>
                     </tr>
                   ))}
