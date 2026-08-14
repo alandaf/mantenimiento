@@ -123,6 +123,7 @@ export default async function WorkOrdersPage({
     <>
       <PageHeader
         title="Órdenes de trabajo"
+        term="ot"
         subtitle={`${total} órdenes${activoId ? " · filtrado por activo" : ""}`}
         actions={<Button href="/ordenes/nueva">+ Nueva OT</Button>}
       />

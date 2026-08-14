@@ -23,6 +23,7 @@ export default async function HorometrosPage() {
     <>
       <PageHeader
         title="Horómetros"
+          term="horometro"
         subtitle={`${meters.length} activos con horómetro · ${stale.length} sin lectura reciente`}
       />
 

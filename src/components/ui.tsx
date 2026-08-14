@@ -1,18 +1,25 @@
 import Link from "next/link";
+import { Term } from "./term";
+import type { GlossaryKey } from "@/lib/glossary";
 
 export function PageHeader({
   title,
   subtitle,
   actions,
+  term,
 }: {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  /** Término del glosario que explica de qué trata la pantalla. */
+  term?: GlossaryKey;
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 border-b border-ink-800 px-6 py-5">
       <div>
-        <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-xl font-bold tracking-tight">
+          {term ? <Term k={term}>{title}</Term> : title}
+        </h1>
         {subtitle && <p className="mt-1 text-sm text-ink-400">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -25,18 +32,21 @@ export function Panel({
   hint,
   children,
   className = "",
+  term,
 }: {
   title?: string;
   hint?: string;
   children: React.ReactNode;
   className?: string;
+  /** Término del glosario que explica de qué va la sección. */
+  term?: GlossaryKey;
 }) {
   return (
     <section className={`panel ${className}`}>
       {title && (
         <div className="flex items-baseline justify-between border-b border-ink-800 px-5 py-3.5">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-300">
-            {title}
+            {term ? <Term k={term}>{title}</Term> : title}
           </h2>
           {hint && <span className="text-[11px] text-ink-400">{hint}</span>}
         </div>
@@ -59,17 +69,20 @@ export function KpiCard({
   unit,
   tone = "neutral",
   footnote,
+  term,
 }: {
   label: string;
   value: string;
   unit?: string;
   tone?: keyof typeof TONE;
   footnote?: string;
+  /** Término del glosario que explica el indicador. */
+  term?: GlossaryKey;
 }) {
   return (
     <div className="panel px-5 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">
-        {label}
+        {term ? <Term k={term}>{label}</Term> : label}
       </p>
       <p className={`num mt-2 text-3xl font-bold ${TONE[tone]}`}>
         {value}

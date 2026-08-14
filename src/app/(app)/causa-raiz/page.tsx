@@ -68,6 +68,7 @@ export default async function CausaRaizPage() {
     <>
       <PageHeader
         title="Análisis de causa raíz"
+          term="causa_raiz"
         subtitle={`${patterns.length} patrones repetitivos · ${chronic} crónicos · ${accelerating} acelerando`}
       />
 
@@ -82,6 +83,7 @@ export default async function CausaRaizPage() {
 
         <Panel
           title="Patrones de falla repetitiva"
+          term="modo_falla"
           hint="mismo modo de falla, mismo activo · últimos 12 meses"
         >
           {patterns.length === 0 ? (

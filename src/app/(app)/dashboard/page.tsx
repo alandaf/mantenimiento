@@ -98,24 +98,28 @@ export default async function DashboardPage({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label="MTTR"
+            term="mttr"
             value={formatHours(summary.mttrHours)}
             tone="neutral"
             footnote="Tiempo medio de reparación de correctivas"
           />
           <KpiCard
             label="MTBF"
+            term="mtbf"
             value={formatHours(summary.mtbfHours)}
             tone="neutral"
             footnote={`${summary.failureCount} fallas en el periodo`}
           />
           <KpiCard
             label="Disponibilidad"
+            term="disponibilidad"
             value={toPercent(availability)}
             tone={availabilityTone}
             footnote={`Inherente: ${toPercent(summary.inherentAvailability)}`}
           />
           <KpiCard
             label="Backlog"
+            term="backlog"
             value={formatHours(summary.backlogHours)}
             tone={summary.backlogHours > 200 ? "warn" : "neutral"}
             footnote={`${summary.openWorkOrders} OT abiertas`}
@@ -125,23 +129,27 @@ export default async function DashboardPage({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label="Cumplimiento PMP"
+            term="cumplimiento_pmp"
             value={toPercent(summary.pmCompliance)}
             tone={pmTone}
             footnote="Preventivas ejecutadas vs. programadas"
           />
           <KpiCard
             label="Trabajo reactivo"
+            term="trabajo_reactivo"
             value={toPercent(summary.correctiveRatio)}
             tone={reactiveTone}
             footnote="Horas correctivas sobre el total"
           />
           <KpiCard
             label="Costo de mantenimiento"
+            term="costo_parada"
             value={money.format(summary.totalCost)}
             footnote="Mano de obra + repuestos"
           />
           <KpiCard
             label="Activos críticos"
+            term="criticidad"
             value={String(badActors.filter((a) => a.criticality === "A").length)}
             footnote="Clase A con fallas en el periodo"
           />
@@ -159,7 +167,7 @@ export default async function DashboardPage({
             </div>
           </Panel>
 
-          <Panel title="Distribución de OT" hint={`${days} días`}>
+          <Panel title="Distribución de OT" hint={`${days} días`} term="ot">
             <div className="px-3 py-4">
               {mix.length === 0 ? (
                 <EmptyState message="Sin órdenes en el periodo." />
@@ -186,7 +194,7 @@ export default async function DashboardPage({
             </div>
           </Panel>
 
-          <Panel title="Los pocos vitales" hint="80% del impacto">
+          <Panel title="Los pocos vitales" hint="80% del impacto" term="pareto">
             {vitalFew.length === 0 ? (
               <EmptyState message="Sin datos suficientes." />
             ) : (
@@ -220,7 +228,7 @@ export default async function DashboardPage({
         </div>
 
         {/* Malos actores */}
-        <Panel title="Malos actores" hint="activos con mayor impacto acumulado">
+        <Panel title="Malos actores" hint="activos con mayor impacto acumulado" term="modo_falla">
           {badActors.length === 0 ? (
             <EmptyState message="Sin fallas registradas en el periodo." />
           ) : (

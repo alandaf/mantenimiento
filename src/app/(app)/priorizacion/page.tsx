@@ -3,6 +3,7 @@ import { getFormatters } from "@/lib/config";
 import { requireRole } from "@/lib/session";
 import Link from "next/link";
 import { Badge, EmptyState, PageHeader, Panel} from "@/components/ui";
+import { Term } from "@/components/term";
 import { db } from "@/db";
 import { aiInsights } from "@/db/schema";
 import { hasApiKey } from "@/lib/ai/client";
@@ -154,6 +155,7 @@ export default async function PrioritizacionPage() {
 
         <Panel
           title="Score de riesgo determinista"
+          term="score_riesgo"
           hint="calculado en el servidor, sin IA"
         >
           {orders.length === 0 ? (
@@ -165,11 +167,11 @@ export default async function PrioritizacionPage() {
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">OT</th>
                     <th className="px-5 py-2.5 font-semibold">Activo</th>
-                    <th className="px-5 py-2.5 font-semibold">Criticidad</th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="criticidad">Criticidad</Term></th>
                     <th className="px-5 py-2.5 text-right font-semibold">Días</th>
                     <th className="px-5 py-2.5 text-right font-semibold">Fallas 90d</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Parada/h</th>
-                    <th className="px-5 py-2.5 text-right font-semibold">Score</th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="costo_parada">Parada/h</Term></th>
+                    <th className="px-5 py-2.5 text-right font-semibold"><Term k="score_riesgo">Score</Term></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-800">

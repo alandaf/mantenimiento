@@ -29,6 +29,7 @@ export default async function PreventivoPage() {
     <>
       <PageHeader
         title="Plan preventivo"
+          term="preventivo"
         subtitle={`${plans.length} rutinas activas · ${byHours.length} disparadas por horas de marcha`}
       />
 

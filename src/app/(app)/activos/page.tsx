@@ -2,6 +2,7 @@ import { asc, sql } from "drizzle-orm";
 import { getFormatters } from "@/lib/config";
 import Link from "next/link";
 import { Badge, Button, EmptyState, PageHeader, Panel} from "@/components/ui";
+import { Term } from "@/components/term";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
 
@@ -57,6 +58,7 @@ export default async function AssetsPage() {
     <>
       <PageHeader
         title="Activos"
+        term="criticidad"
         subtitle={`${rows.length} registros · jerarquía planta → línea → equipo`}
         actions={<Button href="/activos/nuevo">+ Nuevo activo</Button>}
       />
@@ -71,7 +73,7 @@ export default async function AssetsPage() {
                 <thead>
                   <tr className="border-b border-ink-800 text-left text-[11px] uppercase tracking-wider text-ink-400">
                     <th className="px-5 py-2.5 font-semibold">Activo</th>
-                    <th className="px-5 py-2.5 font-semibold">Criticidad</th>
+                    <th className="px-5 py-2.5 font-semibold"><Term k="criticidad">Criticidad</Term></th>
                     <th className="px-5 py-2.5 font-semibold">Estado</th>
                     <th className="px-5 py-2.5 font-semibold">Fabricante</th>
                     <th className="px-5 py-2.5 text-right font-semibold">
