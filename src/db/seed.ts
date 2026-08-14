@@ -15,6 +15,8 @@ import {
 import { industrialDataset } from "./seeds/industrial";
 import { marineDataset } from "./seeds/marine";
 import { marineDataset2 } from "./seeds/marine2";
+import { mineraDataset } from "./seeds/minera";
+import { remolcadorDataset } from "./seeds/remolcador";
 import type { SeedDataset } from "./seeds/types";
 
 /**
@@ -25,9 +27,12 @@ import type { SeedDataset } from "./seeds/types";
  *   pnpm db:seed marino       → flota marina
  *   SEED_DATASET=marino pnpm db:seed
  */
-const DATASETS: Record<string, SeedDataset> = {
+export const DATASETS: Record<string, SeedDataset> = {
   industrial: industrialDataset,
   marino: marineDataset,
+  granelero: marineDataset2,
+  minera: mineraDataset,
+  remolcador: remolcadorDataset,
 };
 
 /** LCG determinista: el mismo seed produce siempre los mismos KPIs. */
@@ -54,7 +59,7 @@ function weighted<T>(entries: ReadonlyArray<readonly [T, number]>): T {
 
 const MONTHS_OF_HISTORY = 12;
 
-async function seed(dataset: SeedDataset, orgId: string, orgName: string) {
+export async function seed(dataset: SeedDataset, orgId: string, orgName: string) {
   const org = { organizationId: orgId };
   console.log(`\n→ Set de datos: ${dataset.label} (${dataset.key})`);
 
@@ -456,11 +461,18 @@ async function main() {
   );
 }
 
-main()
-  .catch((err) => {
-    console.error("✖ Error en el seed:", err);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await sqlClient.end();
-  });
+// Solo cuando se ejecuta este archivo directamente. Otros scripts importan
+// `seed` y `DATASETS` para sembrar UNA instalación; si `main()` corriera al
+// importar, ese import silencioso vaciaría las tablas de todas las demás.
+const ejecutadoDirectamente = process.argv[1]?.replace(/\\/g, "/").endsWith("src/db/seed.ts");
+
+if (ejecutadoDirectamente) {
+  main()
+    .catch((err) => {
+      console.error("✖ Error en el seed:", err);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await sqlClient.end();
+    });
+}

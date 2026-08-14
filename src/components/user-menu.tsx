@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { signOut } from "@/lib/auth-client";
@@ -22,6 +23,12 @@ export function UserMenu({
         {name}
       </p>
       <p className="mt-0.5 text-[11px] text-brand-300">{role}</p>
+      <Link
+        href="/perfil"
+        className="mt-2.5 block w-full rounded-md border border-ink-700 px-2 py-1.5 text-center text-[11px] text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
+      >
+        Mi perfil
+      </Link>
       <button
         type="button"
         disabled={pending}
@@ -32,7 +39,7 @@ export function UserMenu({
             router.refresh();
           })
         }
-        className="mt-2.5 w-full rounded-md border border-ink-700 px-2 py-1.5 text-[11px] text-ink-400 transition hover:bg-ink-800 hover:text-ink-100 disabled:opacity-50"
+        className="mt-1.5 w-full rounded-md border border-ink-700 px-2 py-1.5 text-[11px] text-ink-400 transition hover:bg-ink-800 hover:text-ink-100 disabled:opacity-50"
       >
         {pending ? "Saliendo…" : "Cerrar sesión"}
       </button>
