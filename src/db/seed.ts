@@ -59,6 +59,16 @@ function weighted<T>(entries: ReadonlyArray<readonly [T, number]>): T {
 
 const MONTHS_OF_HISTORY = 12;
 
+/**
+ * Ventanas de lo que puede seguir pendiente hoy.
+ *
+ * Sin ellas el backlog se llenaba de trabajo de hace meses: una demo que a
+ * primera vista parece realista, pero que al abrir una orden muestra un cambio
+ * de aceite abierto desde hace 320 días.
+ */
+const OPEN_CORRECTIVE_WINDOW_DAYS = 45;
+const OPEN_PM_WINDOW_DAYS = 60;
+
 export async function seed(dataset: SeedDataset, orgId: string, orgName: string) {
   const org = { organizationId: orgId };
   console.log(`\n→ Set de datos: ${dataset.label} (${dataset.key})`);
@@ -266,8 +276,32 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
 
       const startedAt = new Date(reportedAt.getTime() + responseHours * 3_600_000);
       const finishedAt = new Date(startedAt.getTime() + repairHours * 3_600_000);
-      const isClosed =
-        finishedAt.getTime() < now.getTime() - 86_400_000 || rand() > 0.25;
+
+      // Una correctiva de hace ocho meses no sigue abierta: a esas alturas o se
+      // cerró o se anuló. Solo las recientes siguen vivas, y con probabilidad
+      // decreciente — cuanto más vieja, más raro es que nadie la haya tocado.
+      //
+      // La regla anterior cerraba todo lo terminado hacía más de un día, así que
+      // en la práctica no quedaba ninguna correctiva abierta y la pantalla de
+      // priorización mostraba solo preventivos rezagados.
+      const daysSinceReport =
+        (now.getTime() - reportedAt.getTime()) / 86_400_000;
+      const stillOpenChance =
+        daysSinceReport > OPEN_CORRECTIVE_WINDOW_DAYS
+          ? 0
+          : 0.8 * (1 - daysSinceReport / OPEN_CORRECTIVE_WINDOW_DAYS);
+
+      // Y no puede darse por cerrada una reparación que aún no termina: una OT
+      // cerrada con fecha de término en el futuro corrompería el MTTR.
+      const terminaEnElFuturo = finishedAt.getTime() > now.getTime();
+      const isClosed = !terminaEnElFuturo && !(rand() < stillOpenChance);
+
+      const openStatus = weighted([
+        ["ejecucion", 3],
+        ["asignada", 2],
+        ["abierta", 2],
+        ["pausada", 1],
+      ] as const);
 
       const tech = pick(fieldTechs);
       const laborHours = repairHours * (0.8 + rand() * 0.9);
@@ -280,21 +314,21 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
         code: "",
         assetId: row.id,
         type: "correctivo",
-        status: isClosed
-          ? "cerrada"
-          : weighted([
-              ["ejecucion", 3],
-              ["asignada", 2],
-              ["abierta", 2],
-              ["pausada", 1],
-            ] as const),
+        status: isClosed ? "cerrada" : openStatus,
         priority,
         title: `${mode.name} en ${row.name}`,
         description: `Reportado por la guardia. Modo de falla identificado: ${mode.name.toLowerCase()}.`,
         failureModeId: mode.id,
         assignedTo: tech.id,
         reportedAt,
-        startedAt: isClosed ? startedAt : rand() > 0.4 ? startedAt : null,
+        // La fecha de inicio sigue al estado en vez de sortearse: una OT "en
+        // ejecución" sin fecha de inicio, o una "abierta" con ella, es una
+        // contradicción que el usuario ve en la ficha.
+        startedAt: isClosed
+          ? startedAt
+          : openStatus === "ejecucion" || openStatus === "pausada"
+            ? startedAt
+            : null,
         finishedAt: isClosed ? finishedAt : null,
         downtimeMinutes: isClosed ? downtimeMinutes : 0,
         estimatedHours: repairHours.toFixed(2),
@@ -313,6 +347,18 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       const reportedAt = new Date(horizonStart.getTime() + day * 86_400_000);
       if (reportedAt > now) break;
       const complied = rand() < 0.85;
+
+      // Un preventivo sin ejecutar de hace ocho meses no sigue "pendiente": en
+      // la práctica se anula al pasar su ventana, porque la rutina siguiente ya
+      // lo reemplazó. Antes cualquier incumplimiento podía quedar abierto con
+      // cualquier antigüedad, y el backlog acumulaba cambios de aceite de 300
+      // días — realista en apariencia, pero absurdo al mirarlo de cerca.
+      const daysSincePm = (now.getTime() - reportedAt.getTime()) / 86_400_000;
+      const pmStatus = complied
+        ? ("cerrada" as const)
+        : daysSincePm <= OPEN_PM_WINDOW_DAYS
+          ? weighted([["abierta", 3], ["asignada", 1]] as const)
+          : ("anulada" as const);
       const assetPlans = plansByAsset.get(row.id) ?? [];
       const originPlan = assetPlans.length > 0 ? pick(assetPlans) : null;
       const durationHours = 1.5 + rand() * 4;
@@ -324,9 +370,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
         code: "",
         assetId: row.id,
         type: "preventivo",
-        status: complied
-          ? "cerrada"
-          : weighted([["anulada", 2], ["abierta", 1]] as const),
+        status: pmStatus,
         priority: 3,
         title: `${originPlan ? originPlan.name : pick(dataset.pmTemplates).name} — ${row.tag}`,
         description: "Ejecución de rutina del plan de mantenimiento preventivo.",

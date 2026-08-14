@@ -42,12 +42,36 @@ async function main() {
     SELECT COUNT(*)::int AS activos FROM assets WHERE organization_id = ${org.id}
   `)) as unknown as Array<{ activos: number }>;
 
-  if (activos > 0) {
+  const rehacer = process.argv.includes("--rehacer");
+
+  if (activos > 0 && !rehacer) {
     console.error(
       `✖ "${slug}" ya tiene ${activos} activos. Sembrar encima los duplicaría.`,
     );
-    console.error("  Si quieres rehacerla, borra antes sus datos a conciencia.");
+    console.error("  Para rehacerla desde cero: añade --rehacer");
     process.exit(1);
+  }
+
+  if (activos > 0 && rehacer) {
+    // Solo esta organización. Escribir los DELETE a mano contra producción cada
+    // vez es justo lo que acaba borrando la instalación equivocada un día con
+    // prisa; aquí el identificador se resuelve una vez y se reutiliza.
+    console.log(`→ Borrando los datos actuales de "${slug}"…`);
+    for (const tabla of [
+      "work_orders",
+      "pm_plans",
+      "meter_readings",
+      "ai_insights",
+      "assets",
+      "failure_modes",
+      "technicians",
+    ]) {
+      await db.execute(
+        sql`DELETE FROM ${sql.identifier(tabla)} WHERE organization_id = ${org.id}`,
+      );
+    }
+    // Las cuentas y la membresía NO se tocan: rehacer la demo no puede dejar
+    // sin instalación a quien ya tiene usuario.
   }
 
   await db
