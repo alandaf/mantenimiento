@@ -26,3 +26,16 @@ export function hasRole(role: string | null | undefined, minimum: Role): boolean
   const r = (role ?? "lectura") as Role;
   return (RANK[r] ?? 0) >= RANK[minimum];
 }
+
+/**
+ * Operador de la plataforma. Deliberadamente **fuera** de `ROLES` y de la
+ * jerarquía: no es el escalón siguiente de `admin`, es otro eje. Mantenerlo
+ * fuera es lo que impide que aparezca en el desplegable de roles del buque y
+ * que un administrador se ascienda solo — el esquema de validación del alta de
+ * usuarios se construye sobre `ROLES`, así que este valor nunca lo pasa.
+ */
+export const SUPERADMIN = "superadmin";
+
+export function isSuperadmin(role: string | null | undefined): boolean {
+  return role === SUPERADMIN;
+}

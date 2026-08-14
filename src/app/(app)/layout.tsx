@@ -2,6 +2,8 @@ import Link from "next/link";
 import { BRAND, BrandMark } from "@/components/brand";
 import { NavLink } from "@/components/nav-link";
 import { UserMenu } from "@/components/user-menu";
+import { redirect } from "next/navigation";
+import { isSuperadmin } from "@/lib/roles";
 import { hasRole, requireSession, ROLES, type Role } from "@/lib/session";
 
 /**
@@ -31,6 +33,15 @@ export default async function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await requireSession();
   const role = (session.user.role ?? "lectura") as Role;
+
+  // El operador de la plataforma no pertenece a ningún buque por diseño: su
+  // sitio es la consola, no el dashboard de una instalación que no es suya.
+  //
+  // Quien sí es tripulante pero se quedó sin instalación lo desvía
+  // `getActiveOrgId()` en la propia consulta, no aquí: el layout y la página
+  // renderizan en paralelo, así que un corte solo en el layout no evitaría que
+  // la página lanzase la suya.
+  if (isSuperadmin(session.user.role)) redirect("/plataforma");
 
   // El menú solo muestra lo que el rol puede abrir. La comprobación real vive
   // en cada acción del servidor: ocultar un enlace no es seguridad.

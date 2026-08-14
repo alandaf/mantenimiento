@@ -1,0 +1,73 @@
+name: Despliegue
+
+# Solo desde main y a mano. Nada llega al servidor sin haber pasado el CI.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Dos despliegues a la vez sobre el mismo servidor se pisan a mitad de build.
+  group: deploy-produccion
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    uses: ./.github/workflows/ci.yml
+
+  desplegar:
+    needs: verificar
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - name: Clave SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # La huella del host se fija como secreto en vez de aceptar cualquiera
+          # con StrictHostKeyChecking=no: eso último aceptaría a un impostor
+          # que se metiera en medio.
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Desplegar
+        env:
+          HOST: ${{ secrets.SSH_HOST }}
+          USER: ${{ secrets.SSH_USER }}
+          DIR: ${{ secrets.DEPLOY_DIR }}
+        run: |
+          ssh "$USER@$HOST" bash -euo pipefail <<EOF
+            cd "$DIR"
+            git fetch --all
+            git reset --hard origin/main
+
+            # --build reconstruye las imágenes con el código nuevo.
+            # `migrate` corre y sale antes de que web arranque; si falla, el
+            # despliegue se detiene aquí y la versión anterior sigue sirviendo.
+            # PROXY_FILE elige quién expone la aplicación:
+            #   compose.host-proxy.yml  si el servidor ya tiene nginx/Traefik
+            #   compose.caddy.yml       si los puertos 80/443 están libres
+            docker compose -p simarp \
+              -f docker/compose.yml -f docker/compose.prod.yml \
+              -f "docker/\${PROXY_FILE:-compose.host-proxy.yml}" \
+              --env-file .env.prod up -d --build
+
+            docker image prune -f
+          EOF
+
+      - name: Comprobar que responde
+        env:
+          URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL/login" || true)
+            if [ "$code" = "200" ]; then
+              echo "✔ La aplicación responde."
+              exit 0
+            fi
+            echo "· intento $i: $code"
+            sleep 5
+          done
+          echo "✖ La aplicación no respondió tras el despliegue."
+          exit 1

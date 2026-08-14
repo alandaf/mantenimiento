@@ -1,0 +1,33 @@
+# Caddy delante, para un servidor donde nadie más usa los puertos 80 y 443.
+#
+#   docker compose -p simarp \
+#     -f docker/compose.yml -f docker/compose.prod.yml -f docker/compose.caddy.yml \
+#     --env-file .env.prod up -d --build
+#
+# Si el servidor ya tiene nginx, Traefik o similar escuchando ahí, este archivo
+# NO sirve: los puertos están ocupados y el contenedor no arrancaría. Usa
+# compose.host-proxy.yml.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?falta SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Los certificados sobreviven a un redespliegue. Sin esto, cada `up`
+      # volvería a pedirlos y Let's Encrypt limita cuántas veces al día.
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:
+  caddy_logs:

@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { getActiveOrgId } from "@/lib/org";
+import { SUPERADMIN } from "@/lib/roles";
 import { requireRole, ROLES, type Role } from "@/lib/session";
 import type { ActionState } from "@/lib/validation";
 
@@ -160,11 +161,13 @@ export async function listUsers() {
 
   // Solo la gente de esta instalación: el administrador de un buque no tiene
   // por qué ver —ni tocar— la tripulación de otro.
-  return (await db.execute(sql`
-    SELECT u.id, u.name, u.email, u.role, u.banned, u.created_at AS "createdAt"
+  const rows = (await db.execute(sql`
+    SELECT u.id, u.name, u.email, u.role, u.banned,
+           to_char(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SSZ') AS "createdAt"
     FROM "user" u
     JOIN member m ON m.user_id = u.id
     WHERE m.organization_id = ${orgId}
+      AND u.role <> ${SUPERADMIN}
     ORDER BY u.created_at
   `)) as unknown as Array<{
     id: string;
@@ -172,16 +175,30 @@ export async function listUsers() {
     email: string;
     role: string | null;
     banned: boolean | null;
-    createdAt: Date;
+    createdAt: string;
   }>;
+
+  // `db.execute` devuelve la fila cruda del driver, sin el mapeo de tipos que
+  // hace el query builder: la fecha llegaba como texto y `Intl` reventaba con
+  // "Invalid time value". Se serializa en ISO y se reconstruye aquí.
+  return rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt) }));
 }
 
-/** Comprueba que un usuario pertenece a la instalación activa. */
+/**
+ * Comprueba que un usuario es gestionable desde la instalación activa.
+ *
+ * Excluye al operador de la plataforma aunque llegara a figurar como miembro:
+ * un administrador de buque no puede degradarlo ni dejarlo fuera, que sería la
+ * forma más directa de quedarse sin quien pueda arreglar nada.
+ */
 async function assertSameOrg(userId: string): Promise<boolean> {
   const orgId = await getActiveOrgId();
   const [row] = (await db.execute(sql`
-    SELECT 1 AS ok FROM member
-    WHERE user_id = ${userId} AND organization_id = ${orgId}
+    SELECT 1 AS ok FROM member m
+    JOIN "user" u ON u.id = m.user_id
+    WHERE m.user_id = ${userId}
+      AND m.organization_id = ${orgId}
+      AND u.role <> ${SUPERADMIN}
     LIMIT 1
   `)) as unknown as Array<{ ok: number }>;
   return Boolean(row);
@@ -196,6 +213,14 @@ export async function resetUserPassword(
 
   if (newPassword.length < 10) {
     return { ok: false, message: "La contraseña necesita al menos 10 caracteres." };
+  }
+  // Faltaba esta comprobación: sin ella, un administrador que conociera el id
+  // de alguien de otra naviera podía cambiarle la contraseña y entrar con ella.
+  if (!(await assertSameOrg(userId))) {
+    return {
+      ok: false,
+      message: "No puedes restablecer la contraseña de alguien de otra instalación.",
+    };
   }
 
   try {

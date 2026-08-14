@@ -410,14 +410,16 @@ async function main() {
     .trim()
     .toLowerCase();
 
-  console.log("→ Limpiando tablas…");
+  // Se limpian los datos de mantenimiento, nunca las cuentas ni las
+  // organizaciones: resembrar la demo no puede dejar sin buque a la gente que
+  // ya tiene cuenta. Borrar `organization` arrastraba `member` en cascada y las
+  // sesiones existentes quedaban huérfanas.
+  console.log("→ Limpiando datos de mantenimiento…");
   await db.execute(sql`
     TRUNCATE TABLE work_orders, pm_plans, meter_readings, ai_insights,
                    assets, failure_modes, technicians, settings
     RESTART IDENTITY CASCADE
   `);
-  await db.execute(sql`DELETE FROM member`);
-  await db.execute(sql`DELETE FROM organization`);
 
   const targets =
     requested === "industrial"
@@ -425,9 +427,13 @@ async function main() {
       : FLEET;
 
   for (const t of targets) {
+    // El slug es la identidad estable de la instalación. Si ya existe se
+    // conserva su id: es lo que mantiene válidas las membresías, y con ellas
+    // las cuentas de la tripulación.
     const [org] = (await db.execute(sql`
       INSERT INTO organization (id, name, slug, created_at)
       VALUES (${crypto.randomUUID()}, ${t.name}, ${t.slug}, now())
+      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
       RETURNING id
     `)) as unknown as Array<{ id: string }>;
 

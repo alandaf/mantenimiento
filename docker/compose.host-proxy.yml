@@ -1,0 +1,17 @@
+# Para un servidor que ya tiene un proxy inverso propio en los puertos 80/443
+# —nginx, Traefik, Nginx Proxy Manager— sirviendo otros sitios.
+#
+#   docker compose -p simarp \
+#     -f docker/compose.yml -f docker/compose.prod.yml -f docker/compose.host-proxy.yml \
+#     --env-file .env.prod up -d --build
+#
+# Aquí no se levanta Caddy: pelearía por unos puertos que ya están ocupados. El
+# proxy existente termina TLS y reenvía a este puerto local.
+services:
+  web:
+    ports:
+      # Atado a 127.0.0.1 y no a 0.0.0.0. La diferencia no es cosmética: sin el
+      # prefijo, Docker abre el puerto a internet saltándose el cortafuegos del
+      # sistema —manipula iptables por debajo de ufw—, y la aplicación quedaría
+      # accesible en claro por la IP, esquivando el proxy y su TLS.
+      - "127.0.0.1:${WEB_LOCAL_PORT:-3210}:3000"

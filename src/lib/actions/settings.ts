@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
@@ -48,13 +48,22 @@ export async function updateSettings(
     };
   }
 
+  const orgId = await getActiveOrgId();
+
   await db
     .insert(settings)
-    .values({ organizationId: await getActiveOrgId(), ...parsed.data })
+    .values({ organizationId: orgId, ...parsed.data })
     .onConflictDoUpdate({
       target: settings.organizationId,
       set: parsed.data,
     });
+
+  // El nombre está duplicado en `organization`, que es lo que ve la consola de
+  // plataforma. Sin esto, renombrar el buque aquí dejaba a la consola mostrando
+  // el nombre viejo indefinidamente.
+  await db.execute(
+    sql`UPDATE organization SET name = ${parsed.data.installationName} WHERE id = ${orgId}`,
+  );
 
   // La moneda alcanza a todas las pantallas y al PDF: se revalida la
   // aplicación entera, no solo esta página.
