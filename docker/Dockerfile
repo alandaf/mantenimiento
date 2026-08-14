@@ -43,6 +43,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # relleno: en ejecución lo reemplaza el DATABASE_URL real del entorno. Sin esto
 # el build de producción falla al llegar a /api/reportes/mensual.
 ENV DATABASE_URL=postgres://build:build@localhost:5432/build
+# Techo al montón de memoria de Node. En un servidor pequeño que ya presta
+# otros servicios, un build sin límite crece hasta que el núcleo mata al
+# proceso más grande —y ese puede ser el contenedor de otro— en vez de fallar
+# aquí. Se puede subir con --build-arg en máquinas holgadas.
+ARG NODE_HEAP_MB=1536
+ENV NODE_OPTIONS=--max-old-space-size=${NODE_HEAP_MB}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
