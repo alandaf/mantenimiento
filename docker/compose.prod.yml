@@ -16,6 +16,14 @@ services:
     command: ["pnpm", "db:migrate"]
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-gmao}:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gmao}
+      # Migrar solo necesita la base, pero esta es además la imagen de
+      # operación: los scripts de arranque en frío se ejecutan con
+      # `docker compose run --rm migrate ...` porque el runtime standalone no
+      # lleva ni tsx ni los scripts. Sin estas variables, better-auth avisa de
+      # que no tiene URL base y un secreto distinto al de la aplicación pasaría
+      # inadvertido.
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?falta BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?falta BETTER_AUTH_URL}
     depends_on:
       db:
         condition: service_healthy
