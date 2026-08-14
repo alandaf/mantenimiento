@@ -38,6 +38,11 @@ CMD ["pnpm", "dev"]
 ##############################
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
+# El build no consulta la base, pero `next build` evalúa los route handlers para
+# recolectar sus datos y src/db valida la variable al importarse. Es un valor de
+# relleno: en ejecución lo reemplaza el DATABASE_URL real del entorno. Sin esto
+# el build de producción falla al llegar a /api/reportes/mensual.
+ENV DATABASE_URL=postgres://build:build@localhost:5432/build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
@@ -56,4 +61,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
+# Las migraciones NO corren aquí. El build standalone solo empaqueta lo que la
+# aplicación importa —ni tsx ni el ejecutor de migraciones—, y engordar esta
+# imagen para poder migrar desperdiciaría lo que la hace pequeña. Corren en un
+# servicio aparte, de un solo uso, que usa la etapa `builder`: ver
+# docker/compose.prod.yml.
 CMD ["node", "server.js"]

@@ -157,6 +157,30 @@ excepción dejaba un error en el log en cada carga.
 La consecuencia práctica: nunca envuelvas `getActiveOrgId()` en un `try/catch`,
 porque se tragaría esa señal.
 
+## Migraciones
+
+El esquema se versiona en `drizzle/`. `db:push` —que compara el esquema con la
+base y decide sobre la marcha qué alterar— sirve mientras los datos son de
+prueba y se pueden borrar; con el histórico de una naviera dentro, un `push` que
+decida recrear una columna es pérdida irreversible.
+
+```bash
+pnpm db:generate   # tras cambiar el esquema: escribe el SQL en drizzle/
+pnpm db:migrate    # aplica lo pendiente
+```
+
+`scripts/migrate.ts` cubre además el caso de **adoptar una base preexistente**:
+si el esquema ya está pero no hay registro de migraciones —porque se creó con
+`push`—, aplicar la inicial fallaría al crear tablas que ya existen. Detecta esa
+situación y da las migraciones por aplicadas sin ejecutarlas. Ocurre una sola
+vez; en una base nueva no se ejecuta nada de eso.
+
+En producción corren como **servicio de un solo uso** (`docker/compose.prod.yml`),
+no dentro de la aplicación: la imagen de runtime es el build standalone de Next
+y no lleva ni `tsx` ni el ejecutor. El servicio `web` espera a que `migrate`
+haya salido bien, así que nunca hay una versión del código hablando con un
+esquema que todavía no existe.
+
 ## Configuración regional
 
 La moneda, el formato regional y el nombre de la instalación viven **en base de
