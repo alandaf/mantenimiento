@@ -4,6 +4,8 @@ out/
 build/
 .env
 .env.local
+# Secretos de producción: viven en el servidor, nunca en el repositorio.
+.env.prod
 *.log
 .DS_Store
 next-env.d.ts

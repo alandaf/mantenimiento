@@ -1,0 +1,32 @@
+# Caddy delante de la aplicación.
+#
+# `SITE_ADDRESS` decide el modo:
+#   pms.tudominio.cl   → HTTPS automático con Let's Encrypt, renovación incluida
+#   :80                → HTTP a secas, para probar contra la IP sin dominio
+#
+# Un certificado de Let's Encrypt necesita un nombre de dominio: con una IP
+# desnuda no hay forma de emitirlo, así que ahí no queda más que HTTP.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# La aplicación no está expuesta al exterior: solo Caddy la alcanza, por la
+	# red interna de compose.
+	reverse_proxy web:3000
+
+	header {
+		# HSTS solo tiene sentido con HTTPS real; con IP no se emite.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

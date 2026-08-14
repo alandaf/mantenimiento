@@ -4,6 +4,9 @@ on:
   # Todas las ramas: un fallo se detecta antes de abrir el PR, no después.
   push:
   pull_request:
+  # El despliegue lo invoca antes de tocar el servidor: nada llega a producción
+  # sin haber pasado typecheck, tests y build.
+  workflow_call:
 
 jobs:
   verify:
