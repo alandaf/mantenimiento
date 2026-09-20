@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { hasApiKey } from "@/lib/ai/client";
 import type { RootCauseAnalysis } from "@/lib/ai/rca";
 import { getFailurePatterns } from "@/lib/kpi/patterns";
+import { getActiveOrgId } from "@/lib/org";
 import { RcaButton } from "./rca-button";
 import { RcaDetail } from "./rca-detail";
 
@@ -25,16 +26,25 @@ const TREND_LABELS: Record<string, { text: string; cls: string }> = {
   indeterminada: { text: "· Serie corta", cls: "text-ink-600" },
 };
 
-/** Último RCA guardado por clave de patrón. */
+/**
+ * Último RCA guardado por clave de patrón, **de esta instalación**.
+ *
+ * El filtro por organización no es opcional: la clave de un patrón se forma
+ * con el modo de falla y el activo, y dos instalaciones pueden coincidir. Sin
+ * él, una planta veía el análisis redactado para otra —con sus tags, sus
+ * fallas y sus costos dentro del texto—.
+ */
 async function getLatestAnalyses(): Promise<
   Map<string, { output: RootCauseAnalysis; model: string; createdAt: Date }>
 > {
+  const orgId = await getActiveOrgId();
   const rows = (await db.execute(sql`
     SELECT DISTINCT ON (input_data->'pattern'->>'key')
       input_data->'pattern'->>'key' AS key,
       output, model, created_at
     FROM ai_insights
     WHERE scope = 'rca'
+      AND organization_id = ${orgId}
     ORDER BY input_data->'pattern'->>'key', created_at DESC
   `)) as unknown as Array<{
     key: string;
