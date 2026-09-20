@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
+import { AuditTrail } from "@/components/audit-trail";
 import { PageHeader } from "@/components/ui";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
@@ -39,6 +40,9 @@ export default async function EditWorkOrderPage({
     <>
       <PageHeader title={workOrder.code} subtitle={workOrder.title} />
       <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
+      <div className="px-6 pb-6">
+        <AuditTrail entidad="orden_trabajo" entidadId={id} />
+      </div>
     </>
   );
 }

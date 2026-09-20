@@ -3,6 +3,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { diferencias, registrarAuditoria } from "@/lib/audit";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
@@ -49,7 +50,17 @@ export async function createWorkOrder(
   try {
     const orgId = await getActiveOrgId();
     code = await nextCode(orgId);
-    await db.insert(workOrders).values({ ...toRow(parsed.data), code, organizationId: orgId });
+    const [creada] = await db
+      .insert(workOrders)
+      .values({ ...toRow(parsed.data), code, organizationId: orgId })
+      .returning({ id: workOrders.id });
+    // Después del éxito, nunca antes: anotar una intención que luego falla
+    // produce un histórico que miente.
+    await registrarAuditoria({
+      entidad: "orden_trabajo",
+      entidadId: creada.id,
+      accion: "crear",
+    });
   } catch {
     return { ok: false, message: "No se pudo crear la orden de trabajo." };
   }
@@ -69,6 +80,14 @@ export async function updateWorkOrder(
   if (!parsed.success) return toActionState(parsed.error);
   const orgId = await getActiveOrgId();
 
+  // Se lee el estado previo para registrar solo lo que cambió. Guardar el
+  // registro entero antes y después hace el histórico ilegible.
+  const [previa] = await db
+    .select()
+    .from(workOrders)
+    .where(and(eq(workOrders.id, id), eq(workOrders.organizationId, orgId)))
+    .limit(1);
+
   try {
     await db.transaction(async (tx) => {
       await tx
@@ -81,6 +100,23 @@ export async function updateWorkOrder(
     });
   } catch {
     return { ok: false, message: "No se pudo actualizar la orden de trabajo." };
+  }
+
+  if (previa) {
+    const cambios = diferencias(previa, toRow(parsed.data) as Record<string, unknown>);
+    if (cambios) {
+      const cambioDeEstado = "status" in cambios;
+      await registrarAuditoria({
+        entidad: "orden_trabajo",
+        entidadId: id,
+        accion: cambioDeEstado
+          ? parsed.data.status === "cerrada"
+            ? "cerrar"
+            : "cambiar_estado"
+          : "modificar",
+        cambios,
+      });
+    }
   }
 
   revalidatePath("/ordenes");
@@ -108,6 +144,11 @@ export async function closeWorkOrder(id: number): Promise<ActionState> {
           AND status NOT IN ('cerrada', 'anulada')
       `);
       advanced = await advancePlanForWorkOrder(tx, id);
+    });
+    await registrarAuditoria({
+      entidad: "orden_trabajo",
+      entidadId: id,
+      accion: "cerrar",
     });
   } catch {
     return { ok: false, message: "No se pudo cerrar la orden." };
