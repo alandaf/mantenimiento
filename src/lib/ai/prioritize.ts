@@ -84,7 +84,11 @@ const outputSchema = z.object({
 
 export type Prioritization = z.infer<typeof outputSchema>;
 
-const buildSystemPrompt = (currencyName: string, currencyExample: string) => `Eres el planificador de mantenimiento de una planta de galvanizado.
+const buildSystemPrompt = (
+  currencyName: string,
+  currencyExample: string,
+  installationName: string,
+) => `Eres el planificador de mantenimiento de ${installationName}.
 Tu tarea es priorizar las órdenes de trabajo abiertas para el turno de hoy.
 
 Cada OT llega con un score de riesgo ya calculado de forma determinista a partir de
@@ -103,7 +107,15 @@ Reglas:
 - Usa las herramientas antes de concluir: consulta los KPIs para situar el periodo, el
   Pareto para saber qué modos de falla ya duelen, y el historial de los activos que
   encabezan el ranking para confirmar si hay un patrón.
-- Una parada de línea en un activo clase A pesa más que varias incidencias menores.
+- REGLA INVIOLABLE. Cada OT trae un campo safetyFloor con el piso de prioridad que
+  fijaron las reglas obligatorias de seguridad, y safetyRule con el motivo. Cuando
+  safetyLocked es verdadero NO puedes bajar esa orden de categoría por ninguna razón:
+  ni por antigüedad, ni por costo, ni porque el equipo tenga respaldo. Subirla sí.
+  Un sistema de seguridad indisponible —detección de gas, parada de emergencia,
+  contraincendios— va primero aunque su score sea bajo, porque el score mide impacto
+  productivo y eso no es lo que está en juego.
+- Al justificar una orden con safetyLocked, cita la regla que la fijó.
+- Una parada de línea en un activo crítico pesa más que varias incidencias menores.
 - Los montos están en ${currencyName}: escríbelos con el formato ${currencyExample}.
 - Escribe para un jefe de mantenimiento con prisa: frases directas, sin relleno.
   La justificación es una o dos frases con cifras, no un párrafo.
@@ -125,8 +137,12 @@ export type PrioritizationRun = {
  * `previous_interaction_id`, así que no reenviamos el historial en cada vuelta.
  */
 export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
-  const { currencyName, currencyExample } = await getFormatters();
-  const SYSTEM_PROMPT = buildSystemPrompt(currencyName, currencyExample);
+  const { currencyName, currencyExample, installationName } = await getFormatters();
+  const SYSTEM_PROMPT = buildSystemPrompt(
+    currencyName,
+    currencyExample,
+    installationName,
+  );
   const client = getClient();
   const openOrders = await getOpenWorkOrders();
 

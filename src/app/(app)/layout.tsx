@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND, BrandMark } from "@/components/brand";
+import { DemoBanner } from "@/components/demo-banner";
 import { NavLink } from "@/components/nav-link";
 import { UserMenu } from "@/components/user-menu";
 import { redirect } from "next/navigation";
@@ -76,7 +77,10 @@ export default async function AppLayout({
         />
       </aside>
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">
+        <DemoBanner />
+        {children}
+      </main>
     </div>
   );
 }

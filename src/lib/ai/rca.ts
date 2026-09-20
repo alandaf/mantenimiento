@@ -143,7 +143,11 @@ const outputSchema = z.object({
 
 export type RootCauseAnalysis = z.infer<typeof outputSchema>;
 
-const buildSystemPrompt = (currencyName: string, currencyExample: string) => `Eres un ingeniero de confiabilidad haciendo un análisis de causa raíz
+const buildSystemPrompt = (
+  currencyName: string,
+  currencyExample: string,
+  installationName: string,
+) => `Eres un ingeniero de confiabilidad de ${installationName} haciendo un análisis de causa raíz
 sobre una falla que se repite en un activo concreto.
 
 Aplicas dos herramientas clásicas:
@@ -176,8 +180,12 @@ export type RcaRun = {
 };
 
 export async function analyzeRootCause(patternKey: string): Promise<RcaRun> {
-  const { currencyName, currencyExample } = await getFormatters();
-  const SYSTEM_PROMPT = buildSystemPrompt(currencyName, currencyExample);
+  const { currencyName, currencyExample, installationName } = await getFormatters();
+  const SYSTEM_PROMPT = buildSystemPrompt(
+    currencyName,
+    currencyExample,
+    installationName,
+  );
   const client = getClient();
   const pattern = await getFailurePattern(patternKey);
   if (!pattern) {

@@ -4,6 +4,7 @@ import { getActiveOrgId } from "@/lib/org";
 import { lastDays } from "@/lib/kpi/period";
 import { getFailurePareto, getKpiSummary } from "@/lib/kpi/queries";
 import { riskBand, riskScore, type Criticality } from "@/lib/kpi/risk";
+import { aplicarPiso, safetyFloor } from "@/lib/kpi/safety";
 
 /**
  * Herramientas de solo lectura que el modelo puede invocar.
@@ -31,6 +32,14 @@ export type OpenWorkOrder = {
   estimatedHours: number;
   riskScore: number;
   riskBand: string;
+  /** Piso obligatorio impuesto por las reglas de seguridad. */
+  safetyFloor: string;
+  /** Regla que lo determinó, para mostrarla y guardarla. */
+  safetyRule: string;
+  /** `true` cuando ni el score ni la IA pueden bajarlo. */
+  safetyLocked: boolean;
+  isSafetySystem: boolean;
+  hasBackup: boolean;
 };
 
 /**
@@ -50,6 +59,8 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
       a.tag AS asset_tag,
       a.name AS asset_name,
       a.criticality::text AS criticality,
+      a.has_backup,
+      a.is_safety_system,
       a.downtime_cost_per_hour,
       fm.name AS failure_mode,
       t.name AS technician,
@@ -78,6 +89,8 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
     asset_tag: string;
     asset_name: string;
     criticality: Criticality;
+    has_backup: boolean;
+    is_safety_system: boolean;
     downtime_cost_per_hour: number;
     failure_mode: string | null;
     technician: string | null;
@@ -93,6 +106,19 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
         repeatFailures90d: r.repeat_failures_90d,
         downtimeCostPerHour: r.downtime_cost_per_hour,
       });
+      // El piso de seguridad se calcula aquí, junto al score, y viaja con la
+      // orden. La IA lo recibe ya impuesto: puede reordenar dentro de una
+      // categoría, nunca degradar lo que una regla fijó.
+      const seguridad = safetyFloor({
+        esSistemaDeSeguridad: r.is_safety_system,
+        // Sin campo de "afecta seguridad" en la OT todavía, se deduce del
+        // activo: en un sistema de seguridad, cualquier falla lo es.
+        afectaSeguridad: false,
+        criticality: r.criticality,
+        tieneRespaldo: r.has_backup,
+        afectaProduccion: r.criticality !== "baja",
+      });
+
       return {
         id: r.id,
         code: r.code,
@@ -109,7 +135,13 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
         technician: r.technician,
         estimatedHours: r.estimated_hours,
         riskScore: score,
-        riskBand: riskBand(score),
+        // La banda final nunca queda por debajo del piso obligatorio.
+        riskBand: aplicarPiso(riskBand(score), seguridad.floor),
+        safetyFloor: seguridad.floor,
+        safetyRule: seguridad.rule,
+        safetyLocked: seguridad.locked,
+        isSafetySystem: r.is_safety_system,
+        hasBackup: r.has_backup,
       };
     })
     .sort((a, b) => b.riskScore - a.riskScore);

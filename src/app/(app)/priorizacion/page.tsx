@@ -186,7 +186,17 @@ export default async function PrioritizacionPage() {
                           <span className="font-medium">{o.title}</span>
                         </Link>
                       </td>
-                      <td className="px-5 py-3 text-ink-400">{o.assetTag}</td>
+                      <td className="px-5 py-3 text-ink-400">
+                        {o.assetTag}
+                        {o.safetyLocked && (
+                          <span
+                            title={o.safetyRule}
+                            className="ml-2 rounded-full bg-bad-500/15 px-2 py-0.5 text-[10px] font-medium text-bad-500 ring-1 ring-inset ring-bad-500/30"
+                          >
+                            Prioridad fijada
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-3">
                         <Badge value={o.criticality} />
                       </td>
