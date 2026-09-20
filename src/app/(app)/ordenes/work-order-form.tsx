@@ -154,6 +154,60 @@ export function WorkOrderForm({
       <div className="panel space-y-4 p-5">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-300">
+            Diagnóstico
+          </h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
+            Tres campos y no uno: el síntoma es lo que se reportó, la causa lo
+            que se encontró y la acción lo que se hizo. Separados se puede
+            analizar después si lo que se reporta coincide con lo que se halla.
+          </p>
+        </div>
+
+        <Field
+          label="Síntoma informado"
+          name="symptom"
+          errors={state.errors}
+          hint="Lo que observó quien reportó la falla."
+        >
+          <Textarea name="symptom" defaultValue={workOrder?.symptom ?? ""} />
+        </Field>
+
+        <Field
+          label="Causa encontrada"
+          name="causeFound"
+          errors={state.errors}
+          hint="Lo confirmado en terreno. Si es una hipótesis, dilo así."
+        >
+          <Textarea name="causeFound" defaultValue={workOrder?.causeFound ?? ""} />
+        </Field>
+
+        <Field
+          label="Trabajo realizado"
+          name="actionPerformed"
+          errors={state.errors}
+        >
+          <Textarea
+            name="actionPerformed"
+            defaultValue={workOrder?.actionPerformed ?? ""}
+          />
+        </Field>
+
+        <Field
+          label="Permiso de trabajo"
+          name="workPermitRef"
+          errors={state.errors}
+          hint="Referencia del permiso autorizado, cuando aplique."
+        >
+          <Input
+            name="workPermitRef"
+            defaultValue={workOrder?.workPermitRef ?? ""}
+          />
+        </Field>
+      </div>
+
+      <div className="panel space-y-4 p-5">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-300">
             Tiempos
           </h2>
           <p className="mt-1 text-[11px] text-ink-400">

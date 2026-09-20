@@ -52,6 +52,12 @@ export const workOrderSchema = z
     priority: z.coerce.number().int().min(1).max(4),
     title: z.string().trim().min(5, "Describe el trabajo").max(200),
     description: optionalText(4000),
+    // Los tres del diagnóstico. Separados a propósito: síntoma es lo que se
+    // reportó, causa lo que se encontró y acción lo que se hizo.
+    symptom: optionalText(1000),
+    causeFound: optionalText(2000),
+    actionPerformed: optionalText(2000),
+    workPermitRef: optionalText(80),
     failureModeId: z.coerce.number().int().positive().nullable().catch(null),
     assignedTo: z.coerce.number().int().positive().nullable().catch(null),
     reportedAt: z
