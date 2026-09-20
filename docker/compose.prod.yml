@@ -1,4 +1,24 @@
+# Rotación de registros, compartida por todos los servicios.
+#
+# Docker NO rota los registros de contenedor por defecto: crecen hasta llenar
+# el disco. En este mismo servidor un contenedor en bucle de reinicio acumuló
+# 1,2 GB en un archivo, y entre dos de ellos se comieron 2 GB.
+#
+# Con esto cada servicio guarda como mucho 30 MB de histórico. Se aplica al
+# crear el contenedor, así que un servicio ya levantado necesita recrearse
+# —`up -d`— para tomarlo.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
+  # `db` se define en compose.yml; aquí solo se le añade la rotación. Postgres
+  # escribe cada conexión y cada error, y es de los que más registro genera.
+  db:
+    logging: *logging
+
   # Migraciones como servicio de un solo uso.
   #
   # Corre hasta terminar y sale; la aplicación no arranca hasta que haya salido
@@ -28,6 +48,7 @@ services:
       db:
         condition: service_healthy
     restart: "no"
+    logging: *logging
 
   web:
     build:
@@ -35,6 +56,7 @@ services:
       dockerfile: docker/Dockerfile
       target: runner
     restart: unless-stopped
+    logging: *logging
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-gmao}:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gmao}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
