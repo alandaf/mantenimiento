@@ -17,6 +17,7 @@ import { marineDataset } from "./seeds/marine";
 import { marineDataset2 } from "./seeds/marine2";
 import { mineraDataset } from "./seeds/minera";
 import { remolcadorDataset } from "./seeds/remolcador";
+import { glpDataset } from "./seeds/glp";
 import type { SeedDataset } from "./seeds/types";
 
 /**
@@ -33,6 +34,7 @@ export const DATASETS: Record<string, SeedDataset> = {
   granelero: marineDataset2,
   minera: mineraDataset,
   remolcador: remolcadorDataset,
+  glp: glpDataset,
 };
 
 /** LCG determinista: el mismo seed produce siempre los mismos KPIs. */
@@ -68,6 +70,47 @@ const MONTHS_OF_HISTORY = 12;
  */
 const OPEN_CORRECTIVE_WINDOW_DAYS = 45;
 const OPEN_PM_WINDOW_DAYS = 60;
+
+/**
+ * Factor estacional por mes, de enero a diciembre.
+ *
+ * Una instalación que falla igual los doce meses del año no existe, y con
+ * datos planos se nota enseguida que son de relleno. En una planta de GLP en
+ * Chile la demanda se dispara en invierno —junio, julio y agosto— y con ella
+ * las horas de envasado, el desgaste y las fallas. En un buque el patrón es
+ * otro, así que el set declara si lo aplica y con qué intensidad.
+ */
+const ESTACION_GLP = [
+  0.75, 0.7, 0.8, 1.0, 1.3, 1.65, 1.8, 1.6, 1.25, 0.95, 0.8, 0.75,
+];
+
+/** Peso estacional de una fecha, o 1 si el set no usa estacionalidad. */
+function factorEstacional(fecha: Date, usa: boolean): number {
+  return usa ? ESTACION_GLP[fecha.getMonth()] : 1;
+}
+
+/**
+ * Reparte una fecha en la ventana del histórico siguiendo la estacionalidad.
+ *
+ * Se sortea una fecha y se acepta con probabilidad proporcional al peso del
+ * mes. Es rechazo simple: más lento que una fórmula cerrada, pero da una
+ * distribución correcta sin tener que invertir la curva a mano.
+ */
+function fechaEstacional(
+  inicio: Date,
+  rangoMs: number,
+  usa: boolean,
+): Date {
+  if (!usa) return new Date(inicio.getTime() + rand() * rangoMs);
+  const maximo = Math.max(...ESTACION_GLP);
+  for (let intento = 0; intento < 40; intento++) {
+    const f = new Date(inicio.getTime() + rand() * rangoMs);
+    if (rand() < factorEstacional(f, true) / maximo) return f;
+  }
+  // Si tras 40 intentos no se aceptó ninguna, se devuelve una cualquiera:
+  // mejor una fecha sin sesgo que un bucle que no termina.
+  return new Date(inicio.getTime() + rand() * rangoMs);
+}
 
 export async function seed(dataset: SeedDataset, orgId: string, orgName: string) {
   const org = { organizationId: orgId };
@@ -123,35 +166,65 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       })
       .returning();
 
+    // Dos pasadas: primero los equipos sin padre dentro del grupo, después los
+    // que cuelgan de ellos. Insertar todo junto no sirve porque el hijo
+    // necesita el id del padre, que solo existe tras insertarlo.
+    const conPadre = group.equipment.filter((e) => e.parentTag);
+    const sinPadre = group.equipment.filter((e) => !e.parentTag);
+
+    const construir = (eq: SeedDataset["groups"][number]["equipment"][number],
+                       parentId: number): NewAsset => ({
+      ...org,
+      tag: eq.tag,
+      name: eq.name,
+      parentId,
+      criticality: eq.criticality,
+      assetType: eq.assetType ?? "otro",
+      hasBackup: eq.hasBackup ?? false,
+      isSafetySystem: eq.isSafetySystem ?? false,
+      status: "operando",
+      location: group.group.name,
+      manufacturer: eq.manufacturer,
+      model: eq.model,
+      serialNumber: `SN-${randInt(100000, 999999)}`,
+      downtimeCostPerHour: eq.downtimeCostPerHour,
+      tracksHours: eq.hoursPerDay !== undefined,
+      installedAt: new Date(
+        Date.UTC(randInt(2012, 2022), randInt(0, 11), randInt(1, 28)),
+      ),
+    });
+
     const inserted = await db
       .insert(assets)
-      .values(
-        group.equipment.map<NewAsset>((eq) => ({
-          ...org,
-          tag: eq.tag,
-          name: eq.name,
-          parentId: node.id,
-          criticality: eq.criticality,
-          assetType: eq.assetType ?? "otro",
-          hasBackup: eq.hasBackup ?? false,
-          isSafetySystem: eq.isSafetySystem ?? false,
-          status: "operando",
-          location: group.group.name,
-          manufacturer: eq.manufacturer,
-          model: eq.model,
-          serialNumber: `SN-${randInt(100000, 999999)}`,
-          downtimeCostPerHour: eq.downtimeCostPerHour,
-          tracksHours: eq.hoursPerDay !== undefined,
-          installedAt: new Date(
-            Date.UTC(randInt(2012, 2022), randInt(0, 11), randInt(1, 28)),
-          ),
-        })),
-      )
+      .values(sinPadre.map((eq) => construir(eq, node.id)))
       .returning();
 
     inserted.forEach((row, i) => {
-      equipmentRows.push({ row, profile: group.equipment[i] });
+      equipmentRows.push({ row, profile: sinPadre[i] });
     });
+
+    if (conPadre.length > 0) {
+      const porTag = new Map(inserted.map((r) => [r.tag, r.id]));
+      const hijos = await db
+        .insert(assets)
+        .values(
+          conPadre.map((eq) => {
+            const padre = porTag.get(eq.parentTag!);
+            if (padre === undefined) {
+              throw new Error(
+                `El activo ${eq.tag} declara parentTag "${eq.parentTag}", que no existe en el grupo ${group.group.tag}.`,
+              );
+            }
+            return construir(eq, padre);
+          }),
+        )
+        .returning();
+
+      hijos.forEach((row, i) => {
+        equipmentRows.push({ row, profile: conPadre[i] });
+      });
+    }
+
   }
 
   const now = new Date();
@@ -172,7 +245,10 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       if (takenAt > now) break;
       if (day > 0) {
         // El uso varía: travesía, puerto, dique. ±40% sobre el promedio.
-        hours += profile.hoursPerDay * 15 * (0.6 + rand() * 0.8);
+        // El horómetro también sigue la temporada: en invierno la planta
+        // envasa más horas por día.
+        const temporada = factorEstacional(takenAt, !!dataset.estacional);
+        hours += profile.hoursPerDay * 15 * (0.6 + rand() * 0.8) * temporada;
       }
       readings.push({
         ...org,
@@ -265,7 +341,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       Math.round(profile.failuresPerYear * (0.75 + rand() * 0.5)),
     );
     for (let i = 0; i < failures; i++) {
-      const reportedAt = new Date(horizonStart.getTime() + rand() * horizonMs);
+      const reportedAt = fechaEstacional(horizonStart, horizonMs, !!dataset.estacional);
       const mode = pick(modePool);
       const priority =
         profile.criticality === "critica"
@@ -428,6 +504,50 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
   }
 
   // Los correlativos se asignan al final, en orden cronológico.
+  // --- Fallas escritas a mano ---
+  //
+  // Van después de las aleatorias para que el correlativo las ordene junto al
+  // resto por fecha: una OT del guion tiene que verse igual que cualquier otra
+  // en el listado, no como un añadido al final.
+  for (const g of dataset.scriptedFailures ?? []) {
+    const fila = equipmentRows.find((e) => e.row.tag === g.assetTag);
+    if (!fila) {
+      throw new Error(`El guion referencia el activo ${g.assetTag}, que no existe en el set.`);
+    }
+    const mode = modeByCode.get(g.failureCode);
+    if (!mode) {
+      throw new Error(`El guion referencia el modo ${g.failureCode}, que no existe en el set.`);
+    }
+
+    const reportedAt = new Date(now.getTime() - g.monthsAgo * 30 * 86_400_000);
+    const startedAt = new Date(reportedAt.getTime() + 2 * 3_600_000);
+    const finishedAt = new Date(startedAt.getTime() + g.repairHours * 3_600_000);
+    const tech = pick(fieldTechs);
+
+    orders.push({
+      ...org,
+      code: "",
+      assetId: fila.row.id,
+      type: "correctivo",
+      status: "cerrada",
+      priority: 1,
+      title: g.title,
+      description: `${g.description}
+
+Resolución: ${g.resolution}`,
+      failureModeId: mode.id,
+      assignedTo: tech.id,
+      reportedAt,
+      startedAt,
+      finishedAt,
+      downtimeMinutes: g.downtimeMinutes,
+      estimatedHours: g.repairHours.toFixed(2),
+      laborHours: g.repairHours.toFixed(2),
+      laborCost: (g.repairHours * tech.hourlyRate).toFixed(2),
+      partsCost: g.partsCost.toFixed(2),
+    });
+  }
+
   orders.sort(
     (a, b) => (a.reportedAt as Date).getTime() - (b.reportedAt as Date).getTime(),
   );

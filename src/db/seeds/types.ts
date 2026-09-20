@@ -55,6 +55,15 @@ export type SeedEquipment = {
   hasBackup?: boolean;
   /** Pertenece a un sistema de seguridad: RCI, detección de gas, parada de emergencia. */
   isSafetySystem?: boolean;
+  /**
+   * Tag de otro equipo del mismo grupo del que este cuelga.
+   *
+   * Es lo que distingue un componente de un equipo independiente: los cuatro
+   * cabezales de llenado no son cuatro máquinas, son partes del carrusel, y
+   * una falla en uno tiene que leerse como una falla del carrusel. Sin esto,
+   * el Pareto repartiría entre cuatro lo que en realidad es un solo problema.
+   */
+  parentTag?: string;
   manufacturer: string;
   model: string;
   /** Costo de una hora de indisponibilidad, en la moneda configurada. */
@@ -89,6 +98,22 @@ export type SeedPmTemplate = {
   estimatedHours: string;
 };
 
+export type SeedScriptedFailure = {
+  assetTag: string;
+  /** Meses hacia atrás desde hoy. 8 = hace ocho meses. */
+  monthsAgo: number;
+  failureCode: string;
+  title: string;
+  description: string;
+  /** Minutos de indisponibilidad. Creciente entre eventos de una misma serie. */
+  downtimeMinutes: number;
+  repairHours: number;
+  /** Repuestos, en la moneda de la instalación. */
+  partsCost: number;
+  /** Qué se hizo. Se guarda en la descripción del cierre. */
+  resolution: string;
+};
+
 export type SeedDataset = {
   key: string;
   label: string;
@@ -98,6 +123,23 @@ export type SeedDataset = {
   failureModes: SeedFailureMode[];
   technicians: SeedTechnician[];
   pmTemplates: SeedPmTemplate[];
+  /**
+   * Aplica la curva estacional de invierno a fallas y horómetros.
+   * Propio de instalaciones cuya carga depende de la temporada, como una
+   * planta de GLP; un buque de línea no la tiene.
+   */
+  estacional?: boolean;
+
+  /**
+   * Fallas escritas a mano, además de las que genera el azar.
+   *
+   * El generador produce un histórico verosímil pero impredecible, y hay
+   * historias que tienen que estar sí o sí: una recurrencia con severidad
+   * creciente sobre el mismo equipo es lo que permite demostrar el análisis de
+   * causa raíz. Dejarla al azar significa que unas veces aparece y otras no.
+   */
+  scriptedFailures?: SeedScriptedFailure[];
+
   /** Prefijo del correlativo de OT. */
   orderPrefix: string;
 };
