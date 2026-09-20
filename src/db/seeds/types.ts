@@ -112,6 +112,21 @@ export type SeedScriptedFailure = {
   partsCost: number;
   /** Qué se hizo. Se guarda en la descripción del cierre. */
   resolution: string;
+  /** Síntoma tal como lo reportó la guardia. */
+  symptom?: string;
+  /** Causa confirmada en terreno, distinta de la hipótesis. */
+  causeFound?: string;
+  /**
+   * Mediciones tomadas antes y después. Es lo que convierte tres reparaciones
+   * sueltas en una serie que se puede graficar y discutir.
+   */
+  mediciones?: Array<{
+    momento: "antes" | "despues";
+    variable: string;
+    valor: number;
+    unidad: string;
+    umbral?: number;
+  }>;
 };
 
 export type SeedDataset = {

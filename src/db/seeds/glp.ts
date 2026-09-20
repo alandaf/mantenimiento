@@ -1068,6 +1068,13 @@ export const glpDataset: SeedDataset = {
       partsCost: 1_240_000,
       resolution:
         "Rodamiento lado acople reemplazado. Se verificó vibración dentro de rango al reponer el servicio.",
+      symptom: "Vibración perceptible al tacto en el descanso lado acople durante el trasvase.",
+      causeFound: "Rodamiento lado acople con desgaste en pista externa.",
+      mediciones: [
+        { momento: "antes", variable: "Vibración global", valor: 7.2, unidad: "mm/s", umbral: 4.5 },
+        { momento: "despues", variable: "Vibración global", valor: 2.1, unidad: "mm/s", umbral: 4.5 },
+        { momento: "antes", variable: "Temperatura descanso", valor: 58, unidad: "°C", umbral: 70 },
+      ],
     },
     {
       assetTag: "P-201A",
@@ -1081,6 +1088,13 @@ export const glpDataset: SeedDataset = {
       partsCost: 2_180_000,
       resolution:
         "Segundo reemplazo de rodamiento en el año. Se registró temperatura de descanso previa a la intervención.",
+      symptom: "Vibración y temperatura elevada en descanso lado acople.",
+      causeFound: "Rodamiento degradado nuevamente. No se verificó alineación del conjunto.",
+      mediciones: [
+        { momento: "antes", variable: "Vibración global", valor: 9.8, unidad: "mm/s", umbral: 4.5 },
+        { momento: "despues", variable: "Vibración global", valor: 3.4, unidad: "mm/s", umbral: 4.5 },
+        { momento: "antes", variable: "Temperatura descanso", valor: 74, unidad: "°C", umbral: 70 },
+      ],
     },
     {
       assetTag: "P-201A",
@@ -1094,6 +1108,15 @@ export const glpDataset: SeedDataset = {
       partsCost: 3_650_000,
       resolution:
         "Reemplazo de rodamientos y verificación de acople. Queda pendiente definir la causa de fondo: la frecuencia entre eventos se acorta.",
+      symptom: "Detención por protección durante la recepción. Vibración fuera de rango y ruido audible.",
+      causeFound:
+        "Rodamientos destruidos. Se midió desalineación angular en el acople. Hipótesis: falta evidencia de cuándo se produjo.",
+      mediciones: [
+        { momento: "antes", variable: "Vibración global", valor: 13.6, unidad: "mm/s", umbral: 4.5 },
+        { momento: "despues", variable: "Vibración global", valor: 2.8, unidad: "mm/s", umbral: 4.5 },
+        { momento: "antes", variable: "Temperatura descanso", valor: 89, unidad: "°C", umbral: 70 },
+        { momento: "antes", variable: "Desalineación angular", valor: 0.31, unidad: "mm/100mm", umbral: 0.05 },
+      ],
     },
   ],
 

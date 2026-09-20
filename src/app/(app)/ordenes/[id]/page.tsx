@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { AuditTrail } from "@/components/audit-trail";
+import { MeasurementsPanel } from "@/components/measurements-panel";
 import { assets } from "@/db/schema";
 import { exigeSegundaFirma } from "@/lib/kpi/approval";
 import { ApprovalPanel } from "./approval-panel";
@@ -55,7 +56,8 @@ export default async function EditWorkOrderPage({
       <PageHeader title={workOrder.code} subtitle={workOrder.title} />
       <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
       <div className="grid gap-5 px-6 pb-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+        <div className="space-y-5 lg:col-span-1">
+          <MeasurementsPanel workOrderId={id} />
           <ApprovalPanel
             workOrderId={id}
             estado={workOrder.status}

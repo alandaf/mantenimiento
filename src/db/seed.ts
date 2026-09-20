@@ -3,6 +3,7 @@ import { db, sqlClient } from "./index";
 import {
   assets,
   failureModes,
+  measurements,
   meterReadings,
   pmPlans,
   settings,
@@ -509,6 +510,18 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
   // Van después de las aleatorias para que el correlativo las ordene junto al
   // resto por fecha: una OT del guion tiene que verse igual que cualquier otra
   // en el listado, no como un añadido al final.
+  // Las mediciones se acumulan aquí y se insertan tras las órdenes, porque
+  // necesitan el id que la base asigna al guardarlas.
+  const medicionesPendientes: Array<{
+    codigoOrden: string;
+    momento: "antes" | "despues";
+    variable: string;
+    valor: number;
+    unidad: string;
+    umbral?: number;
+    fecha: Date;
+  }> = [];
+
   for (const g of dataset.scriptedFailures ?? []) {
     const fila = equipmentRows.find((e) => e.row.tag === g.assetTag);
     if (!fila) {
@@ -545,7 +558,26 @@ Resolución: ${g.resolution}`,
       laborHours: g.repairHours.toFixed(2),
       laborCost: (g.repairHours * tech.hourlyRate).toFixed(2),
       partsCost: g.partsCost.toFixed(2),
+      symptom: g.symptom ?? null,
+      causeFound: g.causeFound ?? null,
+      actionPerformed: g.resolution,
+      unavailableAt: reportedAt,
+      returnedToServiceAt: finishedAt,
     });
+
+    for (const m of g.mediciones ?? []) {
+      medicionesPendientes.push({
+        // Se referencia por título+fecha porque el código aún no existe: se
+        // asigna más abajo, al ordenar todas las órdenes por fecha.
+        codigoOrden: `${g.assetTag}|${reportedAt.getTime()}`,
+        momento: m.momento,
+        variable: m.variable,
+        valor: m.valor,
+        unidad: m.unidad,
+        umbral: m.umbral,
+        fecha: m.momento === "antes" ? reportedAt : finishedAt,
+      });
+    }
   }
 
   orders.sort(
@@ -556,7 +588,39 @@ Resolución: ${g.resolution}`,
     o.code = `${dataset.orderPrefix}-${year}-${String(i + 1).padStart(4, "0")}`;
   });
 
-  await db.insert(workOrders).values(orders);
+  const ordenesGuardadas = await db
+    .insert(workOrders)
+    .values(orders)
+    .returning({ id: workOrders.id, assetId: workOrders.assetId, reportedAt: workOrders.reportedAt });
+
+  if (medicionesPendientes.length > 0) {
+    // Se reconstruye la clave activo|fecha para emparejar cada medición con la
+    // orden que la base acaba de guardar.
+    const porClave = new Map<string, number>();
+    const tagPorAssetId = new Map(equipmentRows.map((e) => [e.row.id, e.row.tag]));
+    for (const o of ordenesGuardadas) {
+      const tag = tagPorAssetId.get(o.assetId);
+      if (tag) porClave.set(`${tag}|${(o.reportedAt as Date).getTime()}`, o.id);
+    }
+
+    const filas = medicionesPendientes.flatMap((m) => {
+      const workOrderId = porClave.get(m.codigoOrden);
+      if (workOrderId === undefined) return [];
+      return [{
+        ...org,
+        workOrderId,
+        moment: m.momento,
+        variable: m.variable,
+        value: m.valor.toFixed(4),
+        unit: m.unidad,
+        threshold: m.umbral !== undefined ? m.umbral.toFixed(4) : null,
+        takenAt: m.fecha,
+      }];
+    });
+
+    if (filas.length > 0) await db.insert(measurements).values(filas);
+    console.log(`→ ${filas.length} mediciones del guion`);
+  }
 
   console.log(`
 ✔ Seed completo — ${dataset.label}

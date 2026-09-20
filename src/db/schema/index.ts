@@ -8,5 +8,6 @@ export * from "./meters";
 export * from "./settings";
 export * from "./ai-insights";
 export * from "./audit";
+export * from "./measurements";
 // Tablas de autenticación generadas por la CLI de better-auth.
 export * from "./auth";

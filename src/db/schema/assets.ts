@@ -10,7 +10,12 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { assetStatusEnum, assetTypeEnum, criticalityEnum } from "./enums";
+import {
+  assetStatusEnum,
+  assetTypeEnum,
+  criticalityEnum,
+  meterTypeEnum,
+} from "./enums";
 
 /**
  * Jerarquía de activos (planta → línea → equipo → componente) mediante
@@ -48,6 +53,17 @@ export const assets = pgTable(
      * prioridad crítica sin importar el resto de los factores.
      */
     isSafetySystem: boolean("is_safety_system").notNull().default(false),
+
+    /** Qué cuenta su contador: horas, ciclos, producción. */
+    meterType: meterTypeEnum("meter_type").notNull().default("horas"),
+
+    /**
+     * Clasificación de área peligrosa. Dato **documental**: se transcribe de la
+     * ingeniería de la planta y el sistema no lo deduce ni lo valida. Deducir
+     * una clasificación de área a partir de otros campos sería inventar un
+     * criterio de seguridad.
+     */
+    hazardousAreaClass: varchar("hazardous_area_class", { length: 40 }),
     status: assetStatusEnum("status").notNull().default("operando"),
     location: varchar("location", { length: 120 }),
     manufacturer: varchar("manufacturer", { length: 120 }),

@@ -87,3 +87,18 @@ export const technicianRoleEnum = pgEnum("technician_role", [
   "planificador",
   "jefe",
 ]);
+
+/**
+ * Qué cuenta el contador del activo.
+ *
+ * No todo se mide en horas: una envasadora se desgasta por cilindros llenados
+ * y una correa por toneladas transportadas. Programar por horas un equipo que
+ * se desgasta por ciclos produce rutinas que llegan tarde o sobran.
+ */
+export const meterTypeEnum = pgEnum("meter_type", [
+  "horas",
+  "ciclos",
+  "produccion",
+  "kilometros",
+  "otro",
+]);
