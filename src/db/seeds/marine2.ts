@@ -30,7 +30,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "MP-101",
           name: "Motor principal Wärtsilä 6RT-flex50",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Wärtsilä",
           model: "6RT-flex50-D",
           downtimeCostPerHour: 3_600_000,
@@ -43,7 +43,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "MP-102",
           name: "Turbocompresor Mitsubishi MET53",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Mitsubishi",
           model: "MET53MB",
           downtimeCostPerHour: 2_700_000,
@@ -56,7 +56,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "MP-103",
           name: "Reductor y eje propulsor",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Wärtsilä",
           model: "SCV 90",
           downtimeCostPerHour: 3_900_000,
@@ -69,7 +69,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "MP-104",
           name: "Enfriador central de agua dulce",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Alfa Laval",
           model: "T20-BFG",
           downtimeCostPerHour: 880_000,
@@ -88,7 +88,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-201",
           name: "Motor auxiliar N.º 1 Daihatsu 6DK-20",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Daihatsu Diesel",
           model: "6DK-20",
           downtimeCostPerHour: 690_000,
@@ -101,7 +101,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-202",
           name: "Motor auxiliar N.º 2 Daihatsu 6DK-20",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Daihatsu Diesel",
           model: "6DK-20",
           downtimeCostPerHour: 690_000,
@@ -114,7 +114,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-203",
           name: "Generador de emergencia Volvo Penta D13",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Volvo Penta",
           model: "D13 MG",
           downtimeCostPerHour: 1_700_000,
@@ -127,7 +127,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-204",
           name: "Purificadora de aceite lubricante",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Mitsubishi Kakoki",
           model: "SJ-20T",
           downtimeCostPerHour: 2_100_000,
@@ -140,7 +140,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-205",
           name: "Caldera auxiliar de fuel",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Alfa Laval Aalborg",
           model: "OL-4",
           downtimeCostPerHour: 580_000,
@@ -153,7 +153,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "GA-206",
           name: "Compresor de aire de trabajo",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Tanabe",
           model: "H-64",
           downtimeCostPerHour: 740_000,
@@ -172,7 +172,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-301",
           name: "Grúa de bodega N.º 1 (30 t)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "MacGregor",
           model: "GLB 30/26",
           // En un granelero las grúas son el negocio: sin ellas no hay descarga.
@@ -186,7 +186,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-302",
           name: "Grúa de bodega N.º 2 (30 t)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "MacGregor",
           model: "GLB 30/26",
           downtimeCostPerHour: 2_900_000,
@@ -199,7 +199,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-303",
           name: "Bomba de achique de bodegas",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Shinko",
           model: "SVA-150",
           downtimeCostPerHour: 780_000,
@@ -212,7 +212,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-304",
           name: "Tapas de escotilla hidráulicas",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "MacGregor",
           model: "Folding 5",
           downtimeCostPerHour: 1_150_000,
@@ -225,7 +225,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-305",
           name: "Servomotor (steering gear)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Kawasaki",
           model: "K-Steer 45",
           downtimeCostPerHour: 3_400_000,
@@ -238,7 +238,7 @@ export const marineDataset2: SeedDataset = {
         {
           tag: "CG-306",
           name: "Molinete y maquinillas de amarre",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Kawasaki",
           model: "MW-22",
           downtimeCostPerHour: 420_000,

@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
 import { lastDays } from "@/lib/kpi/period";
 import { getFailurePareto, getKpiSummary } from "@/lib/kpi/queries";
-import { riskBand, riskScore } from "@/lib/kpi/risk";
+import { riskBand, riskScore, type Criticality } from "@/lib/kpi/risk";
 
 /**
  * Herramientas de solo lectura que el modelo puede invocar.
@@ -20,7 +20,7 @@ export type OpenWorkOrder = {
   title: string;
   assetTag: string;
   assetName: string;
-  criticality: "A" | "B" | "C";
+  criticality: Criticality;
   status: string;
   priority: number;
   ageDays: number;
@@ -77,7 +77,7 @@ export async function getOpenWorkOrders(limit = 40): Promise<OpenWorkOrder[]> {
     age_days: number;
     asset_tag: string;
     asset_name: string;
-    criticality: "A" | "B" | "C";
+    criticality: Criticality;
     downtime_cost_per_hour: number;
     failure_mode: string | null;
     technician: string | null;

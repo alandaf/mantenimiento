@@ -31,7 +31,30 @@ export type SeedTechnician = {
 export type SeedEquipment = {
   tag: string;
   name: string;
-  criticality: "A" | "B" | "C";
+  criticality: "critica" | "alta" | "media" | "baja";
+  /** Qué es el equipo. Por defecto "otro" si el set no lo declara. */
+  assetType?:
+    | "sistema"
+    | "conjunto"
+    | "bomba"
+    | "motor"
+    | "compresor"
+    | "valvula"
+    | "instrumento"
+    | "controlador"
+    | "tablero"
+    | "recipiente"
+    | "intercambiador"
+    | "transportador"
+    | "maquina"
+    | "vehiculo"
+    | "generador"
+    | "seguridad"
+    | "otro";
+  /** Existe un equipo gemelo que asume la carga. */
+  hasBackup?: boolean;
+  /** Pertenece a un sistema de seguridad: RCI, detección de gas, parada de emergencia. */
+  isSafetySystem?: boolean;
   manufacturer: string;
   model: string;
   /** Costo de una hora de indisponibilidad, en la moneda configurada. */

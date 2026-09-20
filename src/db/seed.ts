@@ -96,7 +96,8 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       ...org,
       tag: dataset.root.tag,
       name: dataset.root.name,
-      criticality: "A",
+      criticality: "critica",
+      assetType: "sistema",
       location: dataset.root.location,
       status: "operando",
     })
@@ -115,7 +116,8 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
         tag: group.group.tag,
         name: group.group.name,
         parentId: root.id,
-        criticality: "A",
+        criticality: "critica",
+        assetType: "sistema",
         location: dataset.root.location,
         status: "operando",
       })
@@ -130,6 +132,9 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
           name: eq.name,
           parentId: node.id,
           criticality: eq.criticality,
+          assetType: eq.assetType ?? "otro",
+          hasBackup: eq.hasBackup ?? false,
+          isSafetySystem: eq.isSafetySystem ?? false,
           status: "operando",
           location: group.group.name,
           manufacturer: eq.manufacturer,
@@ -189,7 +194,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
   const insertedPlans = await db.insert(pmPlans).values(
     equipmentRows.flatMap(({ row, profile }) => {
       const count =
-        profile.criticality === "A" ? 3 : profile.criticality === "B" ? 2 : 1;
+        profile.criticality === "critica" ? 3 : profile.criticality === "alta" ? 2 : 1;
       const hours = currentHours.get(row.id) ?? null;
 
       return dataset.pmTemplates
@@ -263,9 +268,9 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
       const reportedAt = new Date(horizonStart.getTime() + rand() * horizonMs);
       const mode = pick(modePool);
       const priority =
-        profile.criticality === "A"
+        profile.criticality === "critica"
           ? weighted([[1, 5], [2, 4], [3, 1]] as const)
-          : profile.criticality === "B"
+          : profile.criticality === "alta"
             ? weighted([[2, 4], [3, 5], [4, 1]] as const)
             : weighted([[3, 5], [4, 4]] as const);
 
@@ -342,7 +347,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
 
     // --- Preventivas ---
     const pmInterval =
-      profile.criticality === "A" ? 30 : profile.criticality === "B" ? 45 : 90;
+      profile.criticality === "critica" ? 30 : profile.criticality === "alta" ? 45 : 90;
     for (let day = 10; day < MONTHS_OF_HISTORY * 30; day += pmInterval) {
       const reportedAt = new Date(horizonStart.getTime() + day * 86_400_000);
       if (reportedAt > now) break;
@@ -390,7 +395,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
     }
 
     // --- Predictivas en equipos críticos ---
-    if (profile.criticality === "A") {
+    if (profile.criticality === "critica") {
       for (let q = 0; q < 4; q++) {
         const reportedAt = new Date(
           horizonStart.getTime() + (q * 90 + 20) * 86_400_000,

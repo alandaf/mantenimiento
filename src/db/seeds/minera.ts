@@ -30,7 +30,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CH-101",
           name: "Chancador primario giratorio 60x89",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Metso",
           model: "Superior MK-III 60-89",
           // Sin chancado primario no entra mineral a la planta: se detiene todo.
@@ -44,7 +44,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CH-102",
           name: "Chancador secundario de cono",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Metso",
           model: "HP900",
           downtimeCostPerHour: 7_200_000,
@@ -57,7 +57,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CH-103",
           name: "Correa transportadora CV-01 (overland)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "ContiTech",
           model: "St-2500 · 3.400 m",
           downtimeCostPerHour: 9_800_000,
@@ -70,7 +70,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CH-104",
           name: "Harnero vibratorio banana 8x24",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Haver & Boecker",
           model: "Niagara XL-Class",
           downtimeCostPerHour: 2_400_000,
@@ -83,7 +83,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CH-105",
           name: "Colector de polvo de chancado",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Donaldson",
           model: "Torit PowerCore",
           downtimeCostPerHour: 380_000,
@@ -102,7 +102,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "ML-201",
           name: "Molino SAG 36' x 20'",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "FLSmidth",
           model: "SAG 36x20 · 16 MW",
           // El activo más caro de la faena: su parada arrastra a la planta entera.
@@ -116,7 +116,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "ML-202",
           name: "Molino de bolas 22' x 36'",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "FLSmidth",
           model: "BM 22x36 · 8 MW",
           downtimeCostPerHour: 15_600_000,
@@ -129,7 +129,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "ML-203",
           name: "Batería de hidrociclones D-26",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Weir Minerals",
           model: "Cavex 650CVX",
           downtimeCostPerHour: 3_900_000,
@@ -142,7 +142,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "ML-204",
           name: "Bomba de pulpa GEHO de alimentación",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Weir Minerals",
           model: "Warman 550 MCR",
           downtimeCostPerHour: 6_400_000,
@@ -155,7 +155,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "ML-205",
           name: "Accionamiento de anillo (ring motor) SAG",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "ABB",
           model: "GMD 16 MW",
           downtimeCostPerHour: 21_000_000,
@@ -174,7 +174,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "FL-301",
           name: "Celdas de flotación rougher 300 m³",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Outotec",
           model: "TankCell e300",
           downtimeCostPerHour: 8_700_000,
@@ -187,7 +187,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "FL-302",
           name: "Espesador de concentrado 45 m",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "FLSmidth",
           model: "E-Duc 45",
           downtimeCostPerHour: 4_100_000,
@@ -200,7 +200,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "FL-303",
           name: "Filtro de prensa de concentrado",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Metso",
           model: "VPA 1530",
           downtimeCostPerHour: 3_300_000,
@@ -213,7 +213,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "FL-304",
           name: "Planta de reactivos y dosificación",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "ProMinent",
           model: "Sigma X",
           downtimeCostPerHour: 620_000,
@@ -232,7 +232,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CX-401",
           name: "Camión de extracción CAEX 793F N.º 1",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Caterpillar",
           model: "793F · 227 t",
           downtimeCostPerHour: 2_800_000,
@@ -245,7 +245,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CX-402",
           name: "Camión de extracción CAEX 793F N.º 2",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Caterpillar",
           model: "793F · 227 t",
           downtimeCostPerHour: 2_800_000,
@@ -258,7 +258,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "PA-403",
           name: "Pala hidráulica de cargío",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Komatsu",
           model: "PC8000-6 · 42 m³",
           downtimeCostPerHour: 11_200_000,
@@ -271,7 +271,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "PF-404",
           name: "Perforadora de tiros de voladura",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Epiroc",
           model: "Pit Viper 351",
           downtimeCostPerHour: 3_600_000,
@@ -284,7 +284,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "MO-405",
           name: "Motoniveladora de caminos",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Caterpillar",
           model: "16M3",
           downtimeCostPerHour: 540_000,
@@ -297,7 +297,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "CA-406",
           name: "Camión aljibe de supresión de polvo",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Caterpillar",
           model: "777G WT",
           downtimeCostPerHour: 460_000,
@@ -316,7 +316,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "SE-501",
           name: "Subestación principal 220/23 kV",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Siemens",
           model: "8DA10",
           downtimeCostPerHour: 22_000_000,
@@ -327,7 +327,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "SE-502",
           name: "Compresores de aire de planta",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Atlas Copco",
           model: "GA 315 VSD",
           downtimeCostPerHour: 1_900_000,
@@ -340,7 +340,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "SE-503",
           name: "Estación de bombeo de agua de proceso",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "KSB",
           model: "Omega 300-670",
           downtimeCostPerHour: 3_100_000,
@@ -353,7 +353,7 @@ export const mineraDataset: SeedDataset = {
         {
           tag: "SE-504",
           name: "Grupo electrógeno de respaldo",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Cummins",
           model: "C2250 D5",
           downtimeCostPerHour: 890_000,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { RISK_WEIGHTS, riskBand, riskScore } from "./risk";
 
 const base = {
-  criticality: "C" as const,
+  criticality: "baja" as const,
   priority: 4,
   ageDays: 0,
   repeatFailures90d: 0,
@@ -12,7 +12,7 @@ const base = {
 describe("riskScore", () => {
   it("suma los cinco factores", () => {
     const { score, factors } = riskScore({
-      criticality: "A",
+      criticality: "critica",
       priority: 1,
       ageDays: 5,
       repeatFailures90d: 2,
@@ -29,7 +29,9 @@ describe("riskScore", () => {
   });
 
   it("da el mínimo a una OT trivial y reciente", () => {
-    expect(riskScore(base).score).toBe(8);
+    // Criticidad baja (4) + prioridad 4 (2), sin antigüedad, repeticiones
+    // ni exposición económica.
+    expect(riskScore(base).score).toBe(6);
   });
 
   it("satura la antigüedad en su tope", () => {
@@ -67,7 +69,7 @@ describe("riskScore", () => {
 
   it("nunca supera 100", () => {
     const { score } = riskScore({
-      criticality: "A",
+      criticality: "critica",
       priority: 1,
       ageDays: 999,
       repeatFailures90d: 99,
@@ -78,14 +80,14 @@ describe("riskScore", () => {
 
   it("ordena correctamente dos OT comparables", () => {
     const criticoViejo = riskScore({
-      criticality: "A",
+      criticality: "critica",
       priority: 2,
       ageDays: 10,
       repeatFailures90d: 1,
       downtimeCostPerHour: 2400,
     }).score;
     const menorReciente = riskScore({
-      criticality: "C",
+      criticality: "baja",
       priority: 3,
       ageDays: 1,
       repeatFailures90d: 0,

@@ -31,7 +31,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "MP-101",
           name: "Motor principal Caterpillar 3516C babor",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Caterpillar",
           model: "3516C · 2.000 kW",
           // Con un motor fuera, el remolcador pierde la mitad de su tiro:
@@ -46,7 +46,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "MP-102",
           name: "Motor principal Caterpillar 3516C estribor",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Caterpillar",
           model: "3516C · 2.000 kW",
           downtimeCostPerHour: 2_100_000,
@@ -59,7 +59,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "PR-103",
           name: "Propulsor azimutal babor (Z-drive)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Schottel",
           model: "SRP 490",
           // Las maniobras a tope de potencia con giros constantes castigan el
@@ -74,7 +74,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "PR-104",
           name: "Propulsor azimutal estribor (Z-drive)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Schottel",
           model: "SRP 490",
           downtimeCostPerHour: 2_600_000,
@@ -87,7 +87,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "PR-105",
           name: "Embragues y acoplamientos elásticos",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Vulkan",
           model: "Rato-S 3005",
           failuresPerYear: 6,
@@ -106,7 +106,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-201",
           name: "Generador auxiliar N.º 1",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Caterpillar",
           model: "C4.4 · 99 kW",
           downtimeCostPerHour: 460_000,
@@ -119,7 +119,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-202",
           name: "Generador auxiliar N.º 2",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Caterpillar",
           model: "C4.4 · 99 kW",
           downtimeCostPerHour: 460_000,
@@ -132,7 +132,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-203",
           name: "Central hidráulica de cubierta",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Parker",
           model: "PV270",
           downtimeCostPerHour: 1_400_000,
@@ -145,7 +145,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-204",
           name: "Enfriador de quilla y circuito de agua dulce",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Bloksma",
           model: "KC-320",
           downtimeCostPerHour: 620_000,
@@ -158,7 +158,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-205",
           name: "Compresor de aire de arranque",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Sperre",
           model: "HL2/77",
           downtimeCostPerHour: 380_000,
@@ -171,7 +171,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "AU-206",
           name: "Separadora de combustible",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Alfa Laval",
           model: "P 605",
           downtimeCostPerHour: 240_000,
@@ -190,7 +190,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "RM-301",
           name: "Maquinilla de remolque de proa",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "DMT",
           model: "TW-200 · tiro 200 kN",
           // Es la herramienta de trabajo: sin ella el remolcador no remolca.
@@ -204,7 +204,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "RM-302",
           name: "Gancho de remolque de escape rápido",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Mampaey",
           model: "SWL 90 t",
           downtimeCostPerHour: 2_200_000,
@@ -215,7 +215,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "RM-303",
           name: "Maquinilla de popa y molinete",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "DMT",
           model: "AW-90",
           downtimeCostPerHour: 720_000,
@@ -228,7 +228,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "RM-304",
           name: "Defensas de proa y costado",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Trelleborg",
           model: "Cylindrical W-Block",
           // Se golpean contra el casco del buque asistido en cada maniobra.
@@ -245,8 +245,9 @@ export const remolcadorDataset: SeedDataset = {
       equipment: [
         {
           tag: "SE-401",
+          isSafetySystem: true,
           name: "Sistema contraincendios FiFi-1 (monitores)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "FFS",
           model: "FiFi-1 · 2.400 m³/h",
           // Certificado y auditado: si no responde, el remolcador pierde la
@@ -260,8 +261,9 @@ export const remolcadorDataset: SeedDataset = {
         },
         {
           tag: "SE-402",
+          isSafetySystem: true,
           name: "Bombas contraincendios y de achique",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Desmi",
           model: "NSL 150-315",
           downtimeCostPerHour: 1_100_000,
@@ -274,7 +276,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "SE-403",
           name: "Servomotor y control de gobierno",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Schottel",
           model: "MasterStick",
           downtimeCostPerHour: 2_300_000,
@@ -287,7 +289,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "SE-404",
           name: "Equipo de navegación y radiocomunicaciones",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Furuno",
           model: "FAR-2228 / FM-8900S",
           downtimeCostPerHour: 480_000,
@@ -300,7 +302,7 @@ export const remolcadorDataset: SeedDataset = {
         {
           tag: "SE-405",
           name: "Baterías y tableros de 24 V",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Victron",
           model: "Quattro 48/10000",
           downtimeCostPerHour: 390_000,

@@ -8,8 +8,16 @@
  * Cinco factores, con techo propio para que ninguno domine el resultado:
  */
 export const RISK_WEIGHTS = {
-  /** Criticidad del activo — el factor de mayor peso (matriz ABC). */
-  criticality: { A: 30, B: 16, C: 6 },
+  /**
+   * Criticidad del activo — el factor de mayor peso.
+   *
+   * El salto de "alta" a "crítica" es el mayor de la escala, pero conviene no
+   * engañarse: los otros cuatro factores suman hasta 70 puntos, así que la
+   * aritmética **no garantiza** que un activo crítico quede siempre arriba.
+   * Esa garantía no es trabajo del score sino de las reglas obligatorias de
+   * `safety.ts`, que se aplican antes y no son negociables.
+   */
+  criticality: { critica: 30, alta: 18, media: 10, baja: 4 },
   /** Prioridad declarada por quien reportó la falla. */
   priority: { 1: 25, 2: 17, 3: 8, 4: 2 },
   /** Antigüedad de la OT abierta: 1.2 puntos por día, tope 18. */
@@ -24,8 +32,10 @@ export const RISK_WEIGHTS = {
   costCeiling: 3000,
 } as const;
 
+export type Criticality = "critica" | "alta" | "media" | "baja";
+
 export type RiskInput = {
-  criticality: "A" | "B" | "C";
+  criticality: Criticality;
   /** 1 = urgente … 4 = baja */
   priority: number;
   /** Días transcurridos desde el reporte */

@@ -1,7 +1,45 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-/** Criticidad del activo según impacto en producción/seguridad (matriz ABC). */
-export const criticalityEnum = pgEnum("criticality", ["A", "B", "C"]);
+/**
+ * Criticidad del activo según impacto en producción y seguridad.
+ *
+ * Cuatro niveles y no tres: en una instalación con sistemas de seguridad hay
+ * que poder distinguir lo que **no puede fallar** —una válvula de aislamiento,
+ * un detector de gas, una parada de emergencia— de lo que es simplemente
+ * importante. Con una sola letra "A" para ambos, las reglas que dan prioridad
+ * obligatoria a la seguridad no tendrían sobre qué apoyarse.
+ */
+export const criticalityEnum = pgEnum("criticality", [
+  "critica",
+  "alta",
+  "media",
+  "baja",
+]);
+
+/**
+ * Tipo de activo. Describe **qué es** el equipo, no cuánto importa —eso es la
+ * criticidad—. Sirve para comparar entre iguales: el MTBF de una bomba solo
+ * dice algo frente al de otras bombas.
+ */
+export const assetTypeEnum = pgEnum("asset_type", [
+  "sistema",
+  "conjunto",
+  "bomba",
+  "motor",
+  "compresor",
+  "valvula",
+  "instrumento",
+  "controlador",
+  "tablero",
+  "recipiente",
+  "intercambiador",
+  "transportador",
+  "maquina",
+  "vehiculo",
+  "generador",
+  "seguridad",
+  "otro",
+]);
 
 /** Estado operativo del activo. */
 export const assetStatusEnum = pgEnum("asset_status", [

@@ -24,7 +24,7 @@ export const assetSchema = z.object({
     .regex(/^[A-Za-z0-9-]+$/, "Solo letras, números y guiones"),
   name: z.string().trim().min(3, "El nombre es obligatorio").max(160),
   parentId: z.coerce.number().int().positive().nullable().catch(null),
-  criticality: z.enum(["A", "B", "C"]),
+  criticality: z.enum(["critica", "alta", "media", "baja"]),
   status: z.enum(["operando", "standby", "detenido", "baja"]),
   location: optionalText(120),
   manufacturer: optionalText(120),

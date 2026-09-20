@@ -34,7 +34,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "ME-101",
           name: "Motor principal MAN B&W 6S60MC-C",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "MAN Energy Solutions",
           model: "6S60MC-C8.2",
           // Un buque parado en fondeo o fuera de itinerario cuesta fletes,
@@ -49,7 +49,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "ME-102",
           name: "Turbocompresor de barrido ABB A175",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "ABB Turbocharging",
           model: "A175-L",
           downtimeCostPerHour: 3_100_000,
@@ -62,7 +62,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "ME-103",
           name: "Eje de cola y bocina",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Wärtsilä",
           model: "Sternbeat 700",
           downtimeCostPerHour: 4_500_000,
@@ -75,7 +75,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "ME-104",
           name: "Enfriador de agua de camisas",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Alfa Laval",
           model: "M15-BFG",
           downtimeCostPerHour: 950_000,
@@ -88,7 +88,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "ME-105",
           name: "Bomba de aceite lubricante principal",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "IMO AB",
           model: "ACG 070",
           downtimeCostPerHour: 2_800_000,
@@ -107,7 +107,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-201",
           name: "Motor auxiliar N.º 1 Yanmar 6EY18ALW",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Yanmar",
           model: "6EY18ALW",
           // Criticidad B pese a ser esencial: hay tres, la redundancia existe.
@@ -121,7 +121,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-202",
           name: "Motor auxiliar N.º 2 Yanmar 6EY18ALW",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Yanmar",
           model: "6EY18ALW",
           downtimeCostPerHour: 780_000,
@@ -134,7 +134,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-203",
           name: "Motor auxiliar N.º 3 Yanmar 6EY18ALW",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Yanmar",
           model: "6EY18ALW",
           downtimeCostPerHour: 780_000,
@@ -147,7 +147,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-204",
           name: "Generador de emergencia Caterpillar C18",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Caterpillar",
           model: "C18 Marine",
           // Su costo/hora representa riesgo y hallazgo de inspección, no
@@ -162,7 +162,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-205",
           name: "Caldera de gases de escape",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Aalborg",
           model: "AV-6N",
           downtimeCostPerHour: 620_000,
@@ -175,7 +175,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-206",
           name: "Purificadora de combustible HFO",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Alfa Laval",
           model: "S 946",
           downtimeCostPerHour: 2_400_000,
@@ -188,7 +188,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-207",
           name: "Compresor de aire de arranque",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Sperre",
           model: "HL2/77",
           downtimeCostPerHour: 2_100_000,
@@ -201,7 +201,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-208",
           name: "Separador de sentinas 15 ppm",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "RWO",
           model: "SKIT/S-DEB",
           // MARPOL Anexo I: una avería aquí es hallazgo de PSC, no solo costo.
@@ -215,7 +215,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "AE-209",
           name: "Evaporador de agua dulce",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Alfa Laval",
           model: "JWP-26-C80",
           downtimeCostPerHour: 260_000,
@@ -234,7 +234,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-301",
           name: "Servomotor (steering gear)",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Rolls-Royce Marine",
           model: "SR 662-FCP",
           // SOLAS: sin gobierno el buque no zarpa. El costo refleja detención.
@@ -248,7 +248,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-302",
           name: "Hélice de proa (bow thruster)",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Kongsberg",
           model: "TT2000 AUX",
           downtimeCostPerHour: 1_400_000,
@@ -261,7 +261,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-303",
           name: "Molinete de anclas y maquinilla de proa",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "MacGregor",
           model: "HAW-120",
           downtimeCostPerHour: 850_000,
@@ -274,7 +274,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-304",
           name: "Grúa de provisiones de babor",
-          criticality: "C",
+          criticality: "baja",
           manufacturer: "Palfinger Marine",
           model: "PK 15500 M",
           downtimeCostPerHour: 190_000,
@@ -285,7 +285,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-305",
           name: "Bomba de lastre N.º 1",
-          criticality: "B",
+          criticality: "alta",
           manufacturer: "Shinko",
           model: "RVP 200-2",
           downtimeCostPerHour: 1_100_000,
@@ -298,7 +298,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-306",
           name: "Sistema contraincendios de CO2",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Consilium",
           model: "CO2 High Pressure",
           downtimeCostPerHour: 2_600_000,
@@ -309,7 +309,7 @@ export const marineDataset: SeedDataset = {
         {
           tag: "DK-307",
           name: "Planta de refrigeración de contenedores reefer",
-          criticality: "A",
+          criticality: "critica",
           manufacturer: "Carrier Transicold",
           model: "PrimeLINE",
           // La carga refrigerada se pierde: el costo es la carga, no el equipo.

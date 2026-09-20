@@ -17,9 +17,10 @@ import type { ActionState } from "@/lib/validation";
 const INITIAL: ActionState = { ok: false };
 
 const CRITICALITY = [
-  { value: "A", label: "A — parada de línea / riesgo de seguridad" },
-  { value: "B", label: "B — impacto parcial en producción" },
-  { value: "C", label: "C — sin impacto inmediato" },
+  { value: "critica", label: "Crítica — riesgo de seguridad o parada total" },
+  { value: "alta", label: "Alta — impacto importante, con respaldo" },
+  { value: "media", label: "Media — impacto parcial en producción" },
+  { value: "baja", label: "Baja — sin impacto inmediato" },
 ];
 
 const STATUS = [
@@ -88,7 +89,7 @@ export function AssetForm({
           <Field label="Criticidad" name="criticality" errors={state.errors}>
             <Select
               name="criticality"
-              defaultValue={asset?.criticality ?? "C"}
+              defaultValue={asset?.criticality ?? "media"}
               options={CRITICALITY}
             />
           </Field>

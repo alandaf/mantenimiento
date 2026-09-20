@@ -10,7 +10,7 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { assetStatusEnum, criticalityEnum } from "./enums";
+import { assetStatusEnum, assetTypeEnum, criticalityEnum } from "./enums";
 
 /**
  * Jerarquía de activos (planta → línea → equipo → componente) mediante
@@ -30,7 +30,24 @@ export const assets = pgTable(
     parentId: integer("parent_id").references((): any => assets.id, {
       onDelete: "set null",
     }),
-    criticality: criticalityEnum("criticality").notNull().default("C"),
+    criticality: criticalityEnum("criticality").notNull().default("media"),
+
+    /** Qué es el equipo. Permite comparar indicadores entre iguales. */
+    assetType: assetTypeEnum("asset_type").notNull().default("otro"),
+
+    /**
+     * Existe un equipo gemelo que asume la carga si este falla. Lo usan las
+     * reglas obligatorias de prioridad: un equipo crítico sin redundancia pesa
+     * más que uno crítico con respaldo.
+     */
+    hasBackup: boolean("has_backup").notNull().default(false),
+
+    /**
+     * El activo forma parte de un sistema de seguridad —contraincendios,
+     * detección de gas, parada de emergencia—. Su indisponibilidad pasa a
+     * prioridad crítica sin importar el resto de los factores.
+     */
+    isSafetySystem: boolean("is_safety_system").notNull().default(false),
     status: assetStatusEnum("status").notNull().default("operando"),
     location: varchar("location", { length: 120 }),
     manufacturer: varchar("manufacturer", { length: 120 }),
