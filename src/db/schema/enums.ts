@@ -44,6 +44,9 @@ export const assetTypeEnum = pgEnum("asset_type", [
 /** Estado operativo del activo. */
 export const assetStatusEnum = pgEnum("asset_status", [
   "operando",
+  // Funciona pero por debajo de su capacidad: sirve para no tener que elegir
+  // entre "todo bien" y "detenido" cuando la realidad está en medio.
+  "degradado",
   "standby",
   "detenido",
   "baja",
@@ -54,6 +57,7 @@ export const woTypeEnum = pgEnum("wo_type", [
   "correctivo",
   "preventivo",
   "predictivo",
+  "inspeccion",
   "mejora",
 ]);
 

@@ -85,6 +85,45 @@ export const workOrders = pgTable(
       .notNull()
       .default("0"),
 
+    /**
+     * Síntoma informado, causa confirmada y trabajo realizado, como tres
+     * campos distintos.
+     *
+     * Parece redundante y no lo es: "vibración elevada" es lo que se reportó,
+     * "desalineación de acople" es lo que se encontró, y "reemplazo de
+     * rodamiento" es lo que se hizo. Con un solo campo de texto libre los tres
+     * se mezclan, y después no hay forma de analizar si lo que se reporta
+     * coincide con lo que se encuentra.
+     */
+    symptom: text("symptom"),
+    causeFound: text("cause_found"),
+    actionPerformed: text("action_performed"),
+
+    /** Referencia del permiso de trabajo autorizado, cuando aplica. */
+    workPermitRef: varchar("work_permit_ref", { length: 80 }),
+
+    /**
+     * Ventana real de indisponibilidad del equipo.
+     *
+     * `downtimeMinutes` dice cuánto; esto dice desde cuándo y hasta cuándo, que
+     * es lo que permite cruzar una parada con lo que pasaba en la planta a esa
+     * hora.
+     */
+    unavailableAt: timestamp("unavailable_at", { withTimezone: true }),
+    returnedToServiceAt: timestamp("returned_to_service_at", {
+      withTimezone: true,
+    }),
+
+    /**
+     * Aprobación del trabajo. Quién y cuándo.
+     *
+     * La regla que la acompaña es que en trabajos críticos el aprobador no
+     * puede ser el ejecutor. No es burocracia: quien hizo la reparación es la
+     * persona con menos distancia para juzgar si quedó bien.
+     */
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
