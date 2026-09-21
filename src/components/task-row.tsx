@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { updateTaskResult } from "@/lib/actions/tasks";
 
@@ -51,6 +52,7 @@ export function TaskRow({
   editable: boolean;
   safetyNote: string | null;
 }) {
+  const router = useRouter();
   const [pendiente, startTransition] = useTransition();
   const [estado, setEstado] = useState(result);
   const [valor, setValor] = useState(value !== null ? String(Number(value)) : "");
@@ -69,6 +71,11 @@ export function TaskRow({
         setEstado(result);
       } else {
         setEstado(nuevoEstado);
+        // Se refresca la página para que el resto se entere: el contador de la
+        // pauta y el botón "Cerrar orden" viven fuera de esta fila. Sin esto,
+        // al marcar el último paso el botón seguía deshabilitado hasta
+        // recargar, y el mecánico concluía que aún faltaba algo.
+        router.refresh();
       }
     });
   }
