@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { ActionDialog } from "@/components/action-dialog";
 import {
   Field,
   FormMessage,
@@ -63,6 +64,12 @@ export function WorkOrderForm({
 
   return (
     <form action={formAction} className="max-w-3xl space-y-5 p-6">
+      {/*
+        El aviso emergente va además del mensaje en línea, no en su lugar: el
+        botón de guardar queda abajo y el mensaje arriba, así que sin esto el
+        usuario pulsa, no ve nada y cree que la aplicación no respondió.
+      */}
+      <ActionDialog state={state} />
       <FormMessage state={state} />
 
       <div className="panel space-y-4 p-5">

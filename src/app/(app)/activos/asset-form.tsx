@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { ActionDialog } from "@/components/action-dialog";
 import {
   Field,
   FormMessage,
@@ -46,6 +47,7 @@ export function AssetForm({
 
   return (
     <form action={formAction} className="max-w-3xl space-y-5 p-6">
+      <ActionDialog state={state} />
       <FormMessage state={state} />
 
       <div className="panel space-y-4 p-5">

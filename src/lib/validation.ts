@@ -1,12 +1,23 @@
 import { z } from "zod";
 
+/**
+ * Texto opcional.
+ *
+ * `.optional()` además de `.nullable()`, y no es un detalle: un campo que el
+ * formulario no muestra —síntoma y causa se ocultan en las rutinas
+ * preventivas— no viaja en el envío, y llega como `undefined`. Sin `.optional()`
+ * Zod lo rechaza con "Required" y la orden no se puede guardar, aunque el
+ * usuario no vea ningún campo que rellenar.
+ */
 const optionalText = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
     .transform((v) => (v === "" ? null : v))
-    .nullable();
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null);
 
 const optionalDate = z
   .string()
@@ -106,10 +117,51 @@ export type ActionState = {
 };
 
 /** Convierte los issues de Zod al formato de ActionState. */
+/** Nombres legibles de los campos, para no mostrar el nombre de la propiedad. */
+const ETIQUETAS: Record<string, string> = {
+  title: "Título",
+  assetId: "Activo",
+  type: "Tipo",
+  priority: "Prioridad",
+  status: "Estado",
+  failureModeId: "Modo de falla",
+  assignedTo: "Responsable",
+  description: "Descripción",
+  symptom: "Síntoma informado",
+  causeFound: "Causa encontrada",
+  actionPerformed: "Trabajo realizado",
+  workPermitRef: "Permiso de trabajo",
+  reportedAt: "Fecha de reporte",
+  startedAt: "Inicio de intervención",
+  finishedAt: "Fin de intervención",
+  downtimeMinutes: "Parada del activo",
+  estimatedHours: "Horas estimadas",
+  laborHours: "Horas reales",
+  laborCost: "Costo de mano de obra",
+  partsCost: "Costo de repuestos",
+  tag: "Código",
+  name: "Nombre",
+  criticality: "Criticidad",
+  parentId: "Activo padre",
+  downtimeCostPerHour: "Costo de parada por hora",
+};
+
 export function toActionState(error: z.ZodError): ActionState {
+  const errors = error.flatten().fieldErrors as Record<string, string[]>;
+
+  // El mensaje nombra el problema en vez de decir "revisa los campos
+  // marcados": la marca está junto al campo, que puede quedar a dos pantallas
+  // del botón de guardar, y entonces el usuario no encuentra qué corregir.
+  const detalle = Object.entries(errors)
+    .slice(0, 3)
+    .map(([campo, msgs]) => `${ETIQUETAS[campo] ?? campo}: ${msgs?.[0] ?? "valor no válido"}`)
+    .join(" · ");
+  const total = Object.keys(errors).length;
+  const resto = total > 3 ? ` y ${total - 3} campo${total - 3 > 1 ? "s" : ""} más` : "";
+
   return {
     ok: false,
-    message: "Revisa los campos marcados.",
-    errors: error.flatten().fieldErrors as Record<string, string[]>,
+    message: detalle ? `${detalle}${resto}.` : "Revisa los campos marcados.",
+    errors,
   };
 }
