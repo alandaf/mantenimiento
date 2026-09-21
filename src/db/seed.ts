@@ -3,11 +3,13 @@ import { db, sqlClient } from "./index";
 import {
   assets,
   failureModes,
+  auditLog,
   measurements,
   meterReadings,
   pmPlans,
   settings,
   technicians,
+  workOrderMaterials,
   workOrders,
   type NewAsset,
   type NewMeterReading,
@@ -20,6 +22,7 @@ import { mineraDataset } from "./seeds/minera";
 import { remolcadorDataset } from "./seeds/remolcador";
 import { glpDataset } from "./seeds/glp";
 import type { SeedDataset } from "./seeds/types";
+import { diagnosticoPara, esRotativo, repuestoPara } from "./seeds/enriquecer";
 
 /**
  * Generador de datos de demostración. La lógica es común a todos los sets: lo
@@ -419,6 +422,13 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
         partsCost: isClosed
           ? (rand() * profile.downtimeCostPerHour * 0.35).toFixed(2)
           : "0",
+        // El diagnóstico se deriva del modo de falla que la orden ya tiene:
+        // así el texto es coherente con la falla y no inventado aparte.
+        ...(isClosed
+          ? diagnosticoPara(mode.category, mode.name, row.name, pick)
+          : { symptom: `${mode.name} reportado en ${row.name}.` }),
+        unavailableAt: isClosed ? reportedAt : null,
+        returnedToServiceAt: isClosed ? finishedAt : null,
       });
     }
 
@@ -456,6 +466,22 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
         priority: 3,
         title: `${originPlan ? originPlan.name : pick(dataset.pmTemplates).name} — ${row.tag}`,
         description: "Ejecución de rutina del plan de mantenimiento preventivo.",
+        // Un preventivo no tiene síntoma que diagnosticar —no hubo falla— pero
+        // sí tiene qué se hizo. Dejarlo vacío hace parecer que la rutina no se
+        // registró, cuando lo que pasa es que no aplica la otra mitad.
+        actionPerformed: complied
+          ? pick([
+              "Rutina ejecutada completa según pauta. Equipo sin observaciones.",
+              "Rutina ejecutada. Se repuso lubricante y se verificó ausencia de fugas.",
+              "Rutina ejecutada. Se registraron parámetros de operación dentro de rango.",
+              "Rutina ejecutada. Se detectó desgaste incipiente, se deja en seguimiento.",
+              "Rutina ejecutada con reemplazo de elementos filtrantes.",
+            ])
+          : null,
+        unavailableAt: complied ? startedAt : null,
+        returnedToServiceAt: complied
+          ? new Date(startedAt.getTime() + durationHours * 3_600_000)
+          : null,
         pmPlanId: originPlan?.id ?? null,
         assignedTo: tech.id,
         reportedAt,
@@ -490,6 +516,13 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
           priority: 3,
           title: `Monitoreo de condición — ${row.tag}`,
           description: "Monitoreo de condición trimestral. Sin hallazgos críticos.",
+          actionPerformed: pick([
+            "Análisis de vibraciones ejecutado. Espectro sin componentes anómalas.",
+            "Termografía ejecutada. Sin puntos calientes sobre el criterio.",
+            "Análisis de aceite enviado a laboratorio. Resultado dentro de límites.",
+            "Medición de aislación ejecutada. Valores por sobre el mínimo.",
+            "Ultrasonido ejecutado en descansos. Sin indicios de degradación.",
+          ]),
           assignedTo: tech.id,
           reportedAt,
           startedAt,
@@ -591,7 +624,17 @@ Resolución: ${g.resolution}`,
   const ordenesGuardadas = await db
     .insert(workOrders)
     .values(orders)
-    .returning({ id: workOrders.id, assetId: workOrders.assetId, reportedAt: workOrders.reportedAt });
+    .returning({
+      id: workOrders.id,
+      assetId: workOrders.assetId,
+      reportedAt: workOrders.reportedAt,
+      finishedAt: workOrders.finishedAt,
+      status: workOrders.status,
+      type: workOrders.type,
+      partsCost: workOrders.partsCost,
+      failureModeId: workOrders.failureModeId,
+      assignedTo: workOrders.assignedTo,
+    });
 
   if (medicionesPendientes.length > 0) {
     // Se reconstruye la clave activo|fecha para emparejar cada medición con la
@@ -621,6 +664,181 @@ Resolución: ${g.resolution}`,
     if (filas.length > 0) await db.insert(measurements).values(filas);
     console.log(`→ ${filas.length} mediciones del guion`);
   }
+
+  // --- Relleno del histórico ---
+  //
+  // Una demostración se explora sin guion: si quien la mira abre una orden
+  // cualquiera y encuentra los paneles vacíos, concluye que esas partes no
+  // están hechas. Da igual que tres órdenes escogidas se vean perfectas.
+  console.log("→ Mediciones, materiales, aprobaciones e historial…");
+
+  const perfilPorAssetId = new Map(
+    equipmentRows.map((e) => [e.row.id, { perfil: e.profile, fila: e.row }]),
+  );
+  const modoPorId = new Map(modes.map((m) => [m.id, m]));
+  const jefes = techs.filter((t) => t.role !== "tecnico");
+
+  const medicionesExtra: Array<typeof measurements.$inferInsert> = [];
+  const materiales: Array<typeof workOrderMaterials.$inferInsert> = [];
+  const auditorias: Array<typeof auditLog.$inferInsert> = [];
+  const aprobaciones: Array<{ id: number; userName: string; when: Date }> = [];
+
+  for (const o of ordenesGuardadas) {
+    const ctx = perfilPorAssetId.get(o.assetId);
+    if (!ctx) continue;
+    const cerrada = o.status === "cerrada";
+    const fin = (o.finishedAt as Date | null) ?? (o.reportedAt as Date);
+    const modo = o.failureModeId ? modoPorId.get(o.failureModeId) : undefined;
+    const tecnico = techs.find((t) => t.id === o.assignedTo);
+
+    // Mediciones: solo donde medir vibración y temperatura tiene sentido.
+    // Una válvula no vibra, y fingir que sí resta credibilidad.
+    if (
+      cerrada &&
+      o.type === "correctivo" &&
+      esRotativo(ctx.fila.assetType) &&
+      rand() < 0.65
+    ) {
+      const vibAntes = 4.8 + rand() * 7;
+      const tempAntes = 55 + rand() * 30;
+      medicionesExtra.push(
+        {
+          ...org,
+          workOrderId: o.id,
+          moment: "antes",
+          variable: "Vibración global",
+          value: vibAntes.toFixed(2),
+          unit: "mm/s",
+          threshold: "4.5000",
+          takenAt: o.reportedAt as Date,
+        },
+        {
+          ...org,
+          workOrderId: o.id,
+          moment: "despues",
+          variable: "Vibración global",
+          value: (1.4 + rand() * 1.8).toFixed(2),
+          unit: "mm/s",
+          threshold: "4.5000",
+          takenAt: fin,
+        },
+        {
+          ...org,
+          workOrderId: o.id,
+          moment: "antes",
+          variable: "Temperatura de descanso",
+          value: tempAntes.toFixed(1),
+          unit: "°C",
+          threshold: "70.0000",
+          takenAt: o.reportedAt as Date,
+        },
+      );
+    }
+
+    // Materiales: el detalle de en qué se fue el costo de repuestos.
+    const costoRepuestos = Number(o.partsCost ?? 0);
+    if (cerrada && costoRepuestos > 0 && modo) {
+      const lineas = randInt(1, 3);
+      let restante = costoRepuestos;
+      for (let i = 0; i < lineas; i++) {
+        const ultima = i === lineas - 1;
+        const monto = ultima ? restante : restante * (0.3 + rand() * 0.4);
+        restante -= monto;
+        const cantidad = randInt(1, 4);
+        materiales.push({
+          ...org,
+          workOrderId: o.id,
+          description: repuestoPara(modo.category, pick),
+          quantity: cantidad.toFixed(3),
+          unit: "u",
+          unitCost: (monto / cantidad).toFixed(2),
+          partNumber: `RP-${randInt(10000, 99999)}`,
+        });
+      }
+    }
+
+    // Aprobación: en equipos críticos o de seguridad, y nunca por el ejecutor.
+    const exigeFirma =
+      ctx.fila.criticality === "critica" || ctx.fila.isSafetySystem;
+    let aprobador: (typeof techs)[number] | undefined;
+    if (cerrada && exigeFirma && rand() < 0.72) {
+      aprobador = jefes.find((j) => j.id !== o.assignedTo) ?? jefes[0];
+      if (aprobador) {
+        aprobaciones.push({
+          id: o.id,
+          userName: aprobador.name,
+          when: new Date(fin.getTime() + randInt(2, 48) * 3_600_000),
+        });
+      }
+    }
+
+    // Historial: el ciclo de vida real de la orden, no eventos inventados.
+    const actor = tecnico ?? techs[0];
+    auditorias.push({
+      ...org,
+      entity: "orden_trabajo",
+      entityId: String(o.id),
+      action: "crear",
+      actorUserId: null,
+      actorName: actor.name,
+      actorEmail: actor.email,
+      actorRole: actor.role === "jefe" ? "jefe" : "tecnico",
+      createdAt: o.reportedAt as Date,
+    });
+    if (cerrada) {
+      auditorias.push({
+        ...org,
+        entity: "orden_trabajo",
+        entityId: String(o.id),
+        action: "cerrar",
+        actorUserId: null,
+        actorName: actor.name,
+        actorEmail: actor.email,
+        actorRole: "tecnico",
+        changes: { status: { antes: "ejecucion", despues: "cerrada" } },
+        createdAt: fin,
+      });
+    }
+    if (aprobador) {
+      const cuando = aprobaciones[aprobaciones.length - 1].when;
+      auditorias.push({
+        ...org,
+        entity: "orden_trabajo",
+        entityId: String(o.id),
+        action: "aprobar",
+        actorUserId: null,
+        actorName: aprobador.name,
+        actorEmail: aprobador.email,
+        actorRole: "jefe",
+        createdAt: cuando,
+      });
+    }
+  }
+
+  const porLotes = async <T>(filas: T[], insertar: (lote: T[]) => Promise<unknown>) => {
+    for (let i = 0; i < filas.length; i += 500) {
+      await insertar(filas.slice(i, i + 500));
+    }
+  };
+
+  if (medicionesExtra.length > 0)
+    await porLotes(medicionesExtra, (l) => db.insert(measurements).values(l));
+  if (materiales.length > 0)
+    await porLotes(materiales, (l) => db.insert(workOrderMaterials).values(l));
+  if (auditorias.length > 0)
+    await porLotes(auditorias, (l) => db.insert(auditLog).values(l));
+
+  for (const a of aprobaciones) {
+    await db.execute(sql`
+      UPDATE work_orders SET approved_by = ${a.userName}, approved_at = ${a.when.toISOString()}::timestamptz
+      WHERE id = ${a.id}
+    `);
+  }
+
+  console.log(
+    `  ${medicionesExtra.length} mediciones · ${materiales.length} materiales · ` +
+      `${aprobaciones.length} aprobaciones · ${auditorias.length} eventos de historial`,
+  );
 
   console.log(`
 ✔ Seed completo — ${dataset.label}
