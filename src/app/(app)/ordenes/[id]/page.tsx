@@ -7,6 +7,8 @@ import { TaskChecklist } from "@/components/task-checklist";
 import { assets } from "@/db/schema";
 import { exigeSegundaFirma } from "@/lib/kpi/approval";
 import { ApprovalPanel } from "./approval-panel";
+import { ClosePanel } from "./close-panel";
+import { workOrderTasks } from "@/db/schema";
 import { PageHeader } from "@/components/ui";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
@@ -38,6 +40,19 @@ export default async function EditWorkOrderPage({
     getWorkOrderCatalogs(),
   ]);
   if (!workOrder) notFound();
+
+  // Estado de la pauta, para saber si la orden se puede cerrar ya.
+  const pasos = await db
+    .select({ result: workOrderTasks.result })
+    .from(workOrderTasks)
+    .where(
+      and(
+        eq(workOrderTasks.workOrderId, id),
+        eq(workOrderTasks.organizationId, orgId),
+      ),
+    );
+  const pendientes = pasos.filter((p) => p.result === null).length;
+  const abierta = !["cerrada", "anulada"].includes(workOrder.status);
 
   // El activo decide si el trabajo exige la firma de un tercero.
   const [activo] = await db
@@ -78,6 +93,13 @@ export default async function EditWorkOrderPage({
       <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
       <div className="grid gap-5 px-6 pb-6 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-1">
+          {abierta && (
+            <ClosePanel
+              workOrderId={id}
+              pasosPendientes={pendientes}
+              totalPasos={pasos.length}
+            />
+          )}
           <MeasurementsPanel workOrderId={id} />
           <ApprovalPanel
             workOrderId={id}
