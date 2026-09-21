@@ -55,6 +55,18 @@ export default async function EditWorkOrderPage({
   return (
     <>
       <PageHeader title={workOrder.code} subtitle={workOrder.title} />
+
+      {/*
+        La pauta va ARRIBA del formulario, no al final.
+        Quien abre una rutina preventiva viene a ejecutarla, no a editar sus
+        campos administrativos: lo primero que tiene que ver es qué hacer en el
+        equipo. Enterrarla bajo cuatro secciones de formulario la vuelve
+        invisible, que es tanto como no tenerla.
+      */}
+      <div className="px-6 pt-5">
+        <TaskChecklist workOrderId={id} />
+      </div>
+
       <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
       <div className="grid gap-5 px-6 pb-6 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-1">
@@ -72,8 +84,7 @@ export default async function EditWorkOrderPage({
             assetTag={activo?.tag ?? "el equipo"}
           />
         </div>
-        <div className="space-y-5 lg:col-span-2">
-          <TaskChecklist workOrderId={id} />
+        <div className="lg:col-span-2">
           <AuditTrail entidad="orden_trabajo" entidadId={id} />
         </div>
       </div>

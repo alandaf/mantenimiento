@@ -335,7 +335,7 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
   // que el mecánico lee en el equipo y lo que después permite saber qué se
   // revisó de verdad, no solo que la orden se cerró.
   console.log("→ Pautas de las rutinas…");
-  const tareasPorPlan = new Map<number, Array<{ id: number; sequence: number; description: string; kind: string }>>();
+  const tareasPorPlan = new Map<number, Array<{ id: number; sequence: number; description: string; kind: string; unidad: string | null }>>();
   const tareasPlantilla = insertedPlans.flatMap((plan) => {
     const tpl = dataset.pmTemplates.find((t) => t.name === plan.name);
     return (tpl?.tareas ?? []).map((t, i) => ({
@@ -361,10 +361,11 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
           sequence: pmTasks.sequence,
           description: pmTasks.description,
           kind: pmTasks.kind,
+          expectedUnit: pmTasks.expectedUnit,
         });
       for (const t of lote) {
         const lista = tareasPorPlan.get(t.pmPlanId) ?? [];
-        lista.push({ id: t.id, sequence: t.sequence, description: t.description, kind: t.kind });
+        lista.push({ id: t.id, sequence: t.sequence, description: t.description, kind: t.kind, unidad: t.expectedUnit });
         tareasPorPlan.set(t.pmPlanId, lista);
       }
     }
@@ -728,13 +729,42 @@ Resolución: ${g.resolution}`,
     for (const t of pauta) {
       // En una rutina cerrada casi todo sale conforme; algún paso no conforme
       // es lo que hace creíble el registro y lo que origina una correctiva.
-      const resultado = !cerrada
+      let resultado = !cerrada
         ? null
         : weighted([
             ["conforme", 88],
             ["no_conforme", 8],
             ["no_aplica", 4],
           ] as const);
+
+      // El valor tiene que ser plausible para su unidad y coherente con el
+      // resultado: una temperatura de 39 °C marcada "no conforme" delata que
+      // el número y el veredicto se generaron por separado, y eso lo nota
+      // cualquiera que lea el registro.
+      let valor: number | null = null;
+      if (cerrada && t.kind === "medicion" && t.unidad) {
+        const fueraDeRango = resultado === "no_conforme";
+        const rangos: Record<string, [number, number, number, number]> = {
+          // unidad: [min normal, max normal, min fuera, max fuera]
+          "°C": [35, 62, 78, 96],
+          "mm/s": [1.2, 4.2, 5.4, 11.8],
+          h: [1200, 48000, 1200, 48000],
+          A: [12, 78, 92, 140],
+          MΩ: [50, 900, 2, 18],
+          bar: [6.5, 9.2, 3.1, 5.4],
+          V: [12.4, 13.8, 9.8, 11.6],
+          min: [18, 45, 4, 12],
+          s: [3, 9, 14, 30],
+          kg: [0.02, 0.18, 0.45, 1.6],
+          "%LEL": [0, 4, 12, 28],
+          "mm/100mm": [0.01, 0.04, 0.09, 0.32],
+        };
+        const r = rangos[t.unidad] ?? [0, 100, 0, 100];
+        const [a, b] = fueraDeRango ? [r[2], r[3]] : [r[0], r[1]];
+        valor = a + rand() * (b - a);
+        // El horómetro no tiene "fuera de rango": es una lectura, no un juicio.
+        if (t.unidad === "h" && resultado === "no_conforme") resultado = "conforme";
+      }
 
       tareasEjecutadas.push({
         ...org,
@@ -744,8 +774,8 @@ Resolución: ${g.resolution}`,
         description: t.description,
         kind: t.kind as never,
         result: resultado as never,
-        value:
-          cerrada && t.kind === "medicion" ? (10 + rand() * 80).toFixed(2) : null,
+        value: valor !== null ? valor.toFixed(2) : null,
+        unit: t.unidad,
         completedAt: cerrada ? fin : null,
         completedBy: cerrada ? tecnico.name : null,
       });

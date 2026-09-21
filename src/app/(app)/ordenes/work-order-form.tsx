@@ -154,35 +154,47 @@ export function WorkOrderForm({
       <div className="panel space-y-4 p-5">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-300">
-            Diagnóstico
+            {isCorrective ? "Diagnóstico" : "Registro del trabajo"}
           </h2>
           <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
-            Tres campos y no uno: el síntoma es lo que se reportó, la causa lo
-            que se encontró y la acción lo que se hizo. Separados se puede
-            analizar después si lo que se reporta coincide con lo que se halla.
+            {isCorrective
+              ? "Tres campos y no uno: el síntoma es lo que se reportó, la causa lo que se encontró y la acción lo que se hizo. Separados se puede analizar después si lo que se reporta coincide con lo que se halla."
+              : "En una rutina programada no hubo falla que diagnosticar, así que solo se registra el trabajo realizado y los hallazgos."}
           </p>
         </div>
 
-        <Field
-          label="Síntoma informado"
-          name="symptom"
-          errors={state.errors}
-          hint="Lo que observó quien reportó la falla."
-        >
-          <Textarea name="symptom" defaultValue={workOrder?.symptom ?? ""} />
-        </Field>
+        {/*
+          Síntoma y causa solo en correctivas. En un preventivo no hubo falla:
+          mostrarlos vacíos sugiere que falta llenarlos, cuando lo correcto es
+          que no apliquen.
+        */}
+        {isCorrective && (
+          <>
+            <Field
+              label="Síntoma informado"
+              name="symptom"
+              errors={state.errors}
+              hint="Lo que observó quien reportó la falla."
+            >
+              <Textarea name="symptom" defaultValue={workOrder?.symptom ?? ""} />
+            </Field>
+
+            <Field
+              label="Causa encontrada"
+              name="causeFound"
+              errors={state.errors}
+              hint="Lo confirmado en terreno. Si es una hipótesis, dilo así."
+            >
+              <Textarea
+                name="causeFound"
+                defaultValue={workOrder?.causeFound ?? ""}
+              />
+            </Field>
+          </>
+        )}
 
         <Field
-          label="Causa encontrada"
-          name="causeFound"
-          errors={state.errors}
-          hint="Lo confirmado en terreno. Si es una hipótesis, dilo así."
-        >
-          <Textarea name="causeFound" defaultValue={workOrder?.causeFound ?? ""} />
-        </Field>
-
-        <Field
-          label="Trabajo realizado"
+          label={isCorrective ? "Trabajo realizado" : "Trabajo realizado y hallazgos"}
           name="actionPerformed"
           errors={state.errors}
         >
