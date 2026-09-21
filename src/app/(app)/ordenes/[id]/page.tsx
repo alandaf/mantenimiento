@@ -3,6 +3,7 @@ import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { AuditTrail } from "@/components/audit-trail";
 import { MeasurementsPanel } from "@/components/measurements-panel";
+import { MaterialsPanel } from "@/components/materials-panel";
 import { TaskChecklist } from "@/components/task-checklist";
 import { assets } from "@/db/schema";
 import { exigeSegundaFirma } from "@/lib/kpi/approval";
@@ -90,7 +91,12 @@ export default async function EditWorkOrderPage({
         />
       </div>
 
-      <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
+      {/*
+        La clave remonta el formulario cuando cambia el costo de repuestos: al
+        agregar un material el servidor lo suma, y un campo no controlado
+        seguiría mostrando el valor viejo y lo reescribiría al guardar.
+      */}
+      <WorkOrderForm key={String(workOrder.partsCost)} currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />
       <div className="grid gap-5 px-6 pb-6 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-1">
           {abierta && (
@@ -100,7 +106,12 @@ export default async function EditWorkOrderPage({
               totalPasos={pasos.length}
             />
           )}
-          <MeasurementsPanel workOrderId={id} />
+          <MeasurementsPanel workOrderId={id} editable={abierta && !workOrder.approvedBy} />
+          <MaterialsPanel
+            workOrderId={id}
+            editable={abierta && !workOrder.approvedBy}
+            currencySymbol={currencySymbol}
+          />
           <ApprovalPanel
             workOrderId={id}
             estado={workOrder.status}

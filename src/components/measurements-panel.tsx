@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { measurements } from "@/db/schema";
 import { Panel } from "@/components/ui";
+import { MeasurementForm } from "@/components/record-forms";
 import { getActiveOrgId } from "@/lib/org";
 
 /**
@@ -13,8 +14,10 @@ import { getActiveOrgId } from "@/lib/org";
  */
 export async function MeasurementsPanel({
   workOrderId,
+  editable = false,
 }: {
   workOrderId: number;
+  editable?: boolean;
 }) {
   const orgId = await getActiveOrgId();
   const filas = await db
@@ -28,7 +31,7 @@ export async function MeasurementsPanel({
     )
     .orderBy(asc(measurements.variable), asc(measurements.takenAt));
 
-  if (filas.length === 0) return null;
+  if (filas.length === 0 && !editable) return null;
 
   // Agrupadas por variable para poder enfrentar el antes con el después.
   const porVariable = new Map<string, typeof filas>();
@@ -94,6 +97,10 @@ export async function MeasurementsPanel({
           );
         })}
       </div>
+      {filas.length === 0 && (
+        <p className="px-5 py-4 text-[11px] text-ink-500">Sin mediciones registradas.</p>
+      )}
+      {editable && <MeasurementForm workOrderId={workOrderId} />}
     </Panel>
   );
 }

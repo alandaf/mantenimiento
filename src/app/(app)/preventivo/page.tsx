@@ -93,7 +93,13 @@ export default async function PreventivoPage() {
                     return (
                       <tr key={p.planId} className="transition hover:bg-ink-850">
                         <td className="px-5 py-3">
-                          <span className="font-medium">{p.name}</span>
+                          <Link
+                            href={`/preventivo/${p.planId}`}
+                            className="font-medium hover:text-brand-300"
+                            title="Ver y editar la pauta de la rutina"
+                          >
+                            {p.name}
+                          </Link>
                           <span className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-400">
                             <Link
                               href={`/ordenes?activo=${p.assetId}`}
