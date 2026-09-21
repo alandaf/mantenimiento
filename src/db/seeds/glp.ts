@@ -1126,17 +1126,129 @@ export const glpDataset: SeedDataset = {
    * procedimientos autorizados de la planta.
    */
   pmTemplates: [
-    { name: "Inspección operacional", trigger: "calendario", frequencyDays: 7, frequencyHours: null, estimatedHours: "1.50" },
-    { name: "Inspección mecánica", trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "3.00" },
-    { name: "Control eléctrico", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "4.00" },
-    { name: "Servicio de compresor", trigger: "ambos", frequencyDays: 90, frequencyHours: 500, estimatedHours: "4.00" },
-    { name: "Servicio de motorreductor", trigger: "ambos", frequencyDays: 180, frequencyHours: 1_000, estimatedHours: "5.00" },
-    { name: "Verificación de báscula", trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "2.00" },
-    { name: "Verificación de detectores de gas", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "3.00" },
-    { name: "Prueba funcional RCI", trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "4.00" },
-    { name: "Respaldo de automatización", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "2.00" },
-    { name: "Revisión de UPS", trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "2.50" },
-    { name: "Servicio de generador", trigger: "ambos", frequencyDays: 180, frequencyHours: 250, estimatedHours: "6.00" },
-    { name: "Inspección mayor de activos críticos", trigger: "calendario", frequencyDays: 365, frequencyHours: null, estimatedHours: "16.00" },
+    {
+      name: "Inspección operacional",
+      tareas: [
+        { descripcion: "Verificar estado general del equipo y su entorno: fugas visibles, anclajes, protecciones.", tipo: "verificacion" },
+        { descripcion: "Escuchar ruidos anormales en marcha y anotar cualquier cambio respecto a la ronda anterior.", tipo: "verificacion" },
+        { descripcion: "Medir temperatura de carcasa y descansos con pirómetro.", tipo: "medicion", unidad: "°C" },
+        { descripcion: "Revisar el panel de alarmas y anotar las activas o reconocidas desde la última ronda.", tipo: "registro" },
+        { descripcion: "Registrar observaciones del operador de turno.", tipo: "registro", opcional: true },
+      ],
+      trigger: "calendario", frequencyDays: 7, frequencyHours: null, estimatedHours: "1.50" },
+    {
+      name: "Inspección mecánica",
+      tareas: [
+        { descripcion: "Verificar condición general de acoples, correas y protecciones.", tipo: "verificacion", seguridad: "Equipo detenido y bloqueado antes de retirar protecciones." },
+        { descripcion: "Comprobar apriete de fijaciones y pernos de anclaje.", tipo: "verificacion" },
+        { descripcion: "Medir y registrar alineación del conjunto motor-equipo.", tipo: "medicion", unidad: "mm/100mm" },
+        { descripcion: "Verificar nivel y estado del lubricante; reponer si corresponde.", tipo: "intervencion" },
+        { descripcion: "Registrar observaciones y hallazgos.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "3.00" },
+    {
+      name: "Control eléctrico",
+      tareas: [
+        { descripcion: "Inspección visual de tablero: señales de calentamiento, polvo, humedad.", tipo: "verificacion", seguridad: "Trabajo sobre tablero energizado requiere personal autorizado y EPP dieléctrico." },
+        { descripcion: "Medir corriente por fase en condición de operación.", tipo: "medicion", unidad: "A" },
+        { descripcion: "Medir resistencia de aislación del motor.", tipo: "medicion", unidad: "MΩ" },
+        { descripcion: "Verificar apriete de bornes de potencia y control.", tipo: "intervencion", seguridad: "Ejecutar con el tablero desenergizado y verificado." },
+        { descripcion: "Registrar anomalías detectadas.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "4.00" },
+    {
+      name: "Servicio de compresor",
+      tareas: [
+        { descripcion: "Registrar lectura del horómetro.", tipo: "medicion", unidad: "h" },
+        { descripcion: "Reemplazar filtro de aire de admisión.", tipo: "reemplazo" },
+        { descripcion: "Reemplazar filtro separador de aceite.", tipo: "reemplazo" },
+        { descripcion: "Verificar nivel y condición del lubricante; reponer o reemplazar según horas.", tipo: "intervencion" },
+        { descripcion: "Medir temperatura de descarga.", tipo: "medicion", unidad: "°C" },
+        { descripcion: "Verificar operación de la purga automática de condensado.", tipo: "verificacion" },
+        { descripcion: "Registrar condición general y observaciones.", tipo: "registro" },
+      ],
+      trigger: "ambos", frequencyDays: 90, frequencyHours: 500, estimatedHours: "4.00" },
+    {
+      name: "Servicio de motorreductor",
+      tareas: [
+        { descripcion: "Registrar lectura del horómetro.", tipo: "medicion", unidad: "h" },
+        { descripcion: "Verificar nivel de aceite del reductor y estado de retenes.", tipo: "verificacion" },
+        { descripcion: "Lubricar descansos según carta de lubricación.", tipo: "intervencion" },
+        { descripcion: "Medir vibración global en descansos.", tipo: "medicion", unidad: "mm/s" },
+        { descripcion: "Verificar condición de acople y chavetas.", tipo: "verificacion", seguridad: "Equipo detenido y bloqueado." },
+        { descripcion: "Registrar condición y observaciones.", tipo: "registro" },
+      ],
+      trigger: "ambos", frequencyDays: 180, frequencyHours: 1_000, estimatedHours: "5.00" },
+    {
+      name: "Verificación de báscula",
+      tareas: [
+        { descripcion: "Verificar cero de la balanza sin carga.", tipo: "verificacion" },
+        { descripcion: "Contrastar con masa patrón y registrar la desviación.", tipo: "medicion", unidad: "kg" },
+        { descripcion: "Ajustar si la desviación supera la tolerancia autorizada.", tipo: "intervencion", opcional: true },
+        { descripcion: "Registrar responsable de la verificación.", tipo: "registro" },
+        { descripcion: "Adjuntar o referenciar el certificado de calibración vigente.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "2.00" },
+    {
+      name: "Verificación de detectores de gas",
+      tareas: [
+        { descripcion: "Verificar vigencia de la calibración de cada detector.", tipo: "verificacion" },
+        { descripcion: "Ejecutar prueba con gas patrón y registrar la respuesta.", tipo: "medicion", unidad: "%LEL", seguridad: "Solo personal competente. Coordinar con sala de control antes de inhibir la señal." },
+        { descripcion: "Verificar que la alarma llega al sistema y se visualiza en el panel.", tipo: "verificacion" },
+        { descripcion: "Restituir la señal y confirmar con sala de control.", tipo: "intervencion", seguridad: "No dejar el lazo inhibido al terminar." },
+        { descripcion: "Registrar resultado y responsable competente.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "3.00" },
+    {
+      name: "Prueba funcional RCI",
+      tareas: [
+        { descripcion: "Verificar nivel del estanque de agua y presión de la red.", tipo: "medicion", unidad: "bar" },
+        { descripcion: "Ejecutar partida de bomba principal y registrar duración de la prueba.", tipo: "medicion", unidad: "min", seguridad: "Coordinar con sala de control y con el turno antes de iniciar." },
+        { descripcion: "Ejecutar partida de bomba de respaldo.", tipo: "verificacion" },
+        { descripcion: "Verificar operación de la bomba jockey y su rango de presión.", tipo: "verificacion" },
+        { descripcion: "Registrar resultado, observaciones y evidencias de la prueba.", tipo: "registro" },
+        { descripcion: "Restituir el sistema a condición de servicio y confirmar.", tipo: "intervencion", seguridad: "Confirmar por escrito que el sistema queda operativo." },
+      ],
+      trigger: "calendario", frequencyDays: 30, frequencyHours: null, estimatedHours: "4.00" },
+    {
+      name: "Respaldo de automatización",
+      tareas: [
+        { descripcion: "Respaldar programa del PLC y registrar la versión.", tipo: "registro" },
+        { descripcion: "Respaldar proyecto del HMI.", tipo: "registro" },
+        { descripcion: "Verificar que el respaldo se puede abrir y no está corrupto.", tipo: "verificacion" },
+        { descripcion: "Registrar fecha, versión, responsable y ubicación del respaldo.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "2.00" },
+    {
+      name: "Revisión de UPS",
+      tareas: [
+        { descripcion: "Verificar alarmas activas en el panel del equipo.", tipo: "verificacion" },
+        { descripcion: "Ejecutar prueba de autonomía y registrar el tiempo alcanzado.", tipo: "medicion", unidad: "min", seguridad: "Coordinar con sala de control: la prueba deja la carga en baterías." },
+        { descripcion: "Medir tensión de flotación del banco de baterías.", tipo: "medicion", unidad: "V" },
+        { descripcion: "Verificar condición física de las baterías: hinchazón, corrosión, fugas.", tipo: "verificacion" },
+        { descripcion: "Registrar condición y observaciones.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 90, frequencyHours: null, estimatedHours: "2.50" },
+    {
+      name: "Servicio de generador",
+      tareas: [
+        { descripcion: "Registrar lectura del horómetro.", tipo: "medicion", unidad: "h" },
+        { descripcion: "Ejecutar prueba de partida en vacío y registrar el tiempo hasta arranque.", tipo: "medicion", unidad: "s" },
+        { descripcion: "Verificar nivel de combustible, aceite y refrigerante.", tipo: "verificacion" },
+        { descripcion: "Medir tensión de la batería de partida.", tipo: "medicion", unidad: "V" },
+        { descripcion: "Ejecutar prueba con carga y documentar el resultado.", tipo: "registro", seguridad: "Coordinar la transferencia de carga con sala de control." },
+        { descripcion: "Registrar condición general del equipo.", tipo: "registro" },
+      ],
+      trigger: "ambos", frequencyDays: 180, frequencyHours: 250, estimatedHours: "6.00" },
+    {
+      name: "Inspección mayor de activos críticos",
+      tareas: [
+        { descripcion: "Revisar el equipo según el manual del fabricante y el procedimiento aprobado.", tipo: "verificacion", seguridad: "Ejecutar con permiso de trabajo y bloqueo de energías." },
+        { descripcion: "Verificar condición de elementos de desgaste y documentar mediciones.", tipo: "medicion" },
+        { descripcion: "Revisar historial de fallas del último año y contrastar con lo encontrado.", tipo: "registro" },
+        { descripcion: "Emitir informe de condición con recomendaciones.", tipo: "registro" },
+        { descripcion: "Registrar responsable y referencia del procedimiento aplicado.", tipo: "registro" },
+      ],
+      trigger: "calendario", frequencyDays: 365, frequencyHours: null, estimatedHours: "16.00" },
   ],
 };

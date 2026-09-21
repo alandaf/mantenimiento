@@ -3,6 +3,7 @@ import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { AuditTrail } from "@/components/audit-trail";
 import { MeasurementsPanel } from "@/components/measurements-panel";
+import { TaskChecklist } from "@/components/task-checklist";
 import { assets } from "@/db/schema";
 import { exigeSegundaFirma } from "@/lib/kpi/approval";
 import { ApprovalPanel } from "./approval-panel";
@@ -71,7 +72,8 @@ export default async function EditWorkOrderPage({
             assetTag={activo?.tag ?? "el equipo"}
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-5 lg:col-span-2">
+          <TaskChecklist workOrderId={id} />
           <AuditTrail entidad="orden_trabajo" entidadId={id} />
         </div>
       </div>

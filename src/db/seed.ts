@@ -9,7 +9,9 @@ import {
   pmPlans,
   settings,
   technicians,
+  pmTasks,
   workOrderMaterials,
+  workOrderTasks,
   workOrders,
   type NewAsset,
   type NewMeterReading,
@@ -327,6 +329,48 @@ export async function seed(dataset: SeedDataset, orgId: string, orgName: string)
     plansByAsset.set(plan.assetId, list);
   }
 
+  // --- Pautas de las rutinas ---
+  //
+  // Sin pauta, un plan preventivo es solo una fecha de vencimiento. Esto es lo
+  // que el mecánico lee en el equipo y lo que después permite saber qué se
+  // revisó de verdad, no solo que la orden se cerró.
+  console.log("→ Pautas de las rutinas…");
+  const tareasPorPlan = new Map<number, Array<{ id: number; sequence: number; description: string; kind: string }>>();
+  const tareasPlantilla = insertedPlans.flatMap((plan) => {
+    const tpl = dataset.pmTemplates.find((t) => t.name === plan.name);
+    return (tpl?.tareas ?? []).map((t, i) => ({
+      ...org,
+      pmPlanId: plan.id,
+      sequence: i + 1,
+      description: t.descripcion,
+      kind: t.tipo,
+      expectedUnit: t.unidad ?? null,
+      required: !t.opcional,
+      safetyNote: t.seguridad ?? null,
+    }));
+  });
+
+  if (tareasPlantilla.length > 0) {
+    for (let i = 0; i < tareasPlantilla.length; i += 500) {
+      const lote = await db
+        .insert(pmTasks)
+        .values(tareasPlantilla.slice(i, i + 500))
+        .returning({
+          id: pmTasks.id,
+          pmPlanId: pmTasks.pmPlanId,
+          sequence: pmTasks.sequence,
+          description: pmTasks.description,
+          kind: pmTasks.kind,
+        });
+      for (const t of lote) {
+        const lista = tareasPorPlan.get(t.pmPlanId) ?? [];
+        lista.push({ id: t.id, sequence: t.sequence, description: t.description, kind: t.kind });
+        tareasPorPlan.set(t.pmPlanId, lista);
+      }
+    }
+    console.log(`  ${tareasPlantilla.length} pasos en ${tareasPorPlan.size} rutinas`);
+  }
+
   console.log("→ Órdenes de trabajo (12 meses)…");
   const horizonMs = now.getTime() - horizonStart.getTime();
   const orders: NewWorkOrder[] = [];
@@ -627,6 +671,7 @@ Resolución: ${g.resolution}`,
     .returning({
       id: workOrders.id,
       assetId: workOrders.assetId,
+      pmPlanId: workOrders.pmPlanId,
       reportedAt: workOrders.reportedAt,
       finishedAt: workOrders.finishedAt,
       status: workOrders.status,
@@ -663,6 +708,55 @@ Resolución: ${g.resolution}`,
 
     if (filas.length > 0) await db.insert(measurements).values(filas);
     console.log(`→ ${filas.length} mediciones del guion`);
+  }
+
+  // --- Pauta ejecutada en cada rutina ---
+  //
+  // La pauta se COPIA a la orden, no se referencia. Si mañana se cambia el
+  // plan, esta orden debe seguir diciendo lo que realmente se pidió hacer ese
+  // día: reescribir el histórico al editar una plantilla seria falsificarlo.
+  const tareasEjecutadas: Array<typeof workOrderTasks.$inferInsert> = [];
+  for (const o of ordenesGuardadas) {
+    if (o.type !== "preventivo" || !o.pmPlanId) continue;
+    const pauta = tareasPorPlan.get(o.pmPlanId);
+    if (!pauta || pauta.length === 0) continue;
+
+    const cerrada = o.status === "cerrada";
+    const fin = (o.finishedAt as Date | null) ?? (o.reportedAt as Date);
+    const tecnico = techs.find((t) => t.id === o.assignedTo) ?? techs[0];
+
+    for (const t of pauta) {
+      // En una rutina cerrada casi todo sale conforme; algún paso no conforme
+      // es lo que hace creíble el registro y lo que origina una correctiva.
+      const resultado = !cerrada
+        ? null
+        : weighted([
+            ["conforme", 88],
+            ["no_conforme", 8],
+            ["no_aplica", 4],
+          ] as const);
+
+      tareasEjecutadas.push({
+        ...org,
+        workOrderId: o.id,
+        pmTaskId: t.id,
+        sequence: t.sequence,
+        description: t.description,
+        kind: t.kind as never,
+        result: resultado as never,
+        value:
+          cerrada && t.kind === "medicion" ? (10 + rand() * 80).toFixed(2) : null,
+        completedAt: cerrada ? fin : null,
+        completedBy: cerrada ? tecnico.name : null,
+      });
+    }
+  }
+
+  if (tareasEjecutadas.length > 0) {
+    for (let i = 0; i < tareasEjecutadas.length; i += 500) {
+      await db.insert(workOrderTasks).values(tareasEjecutadas.slice(i, i + 500));
+    }
+    console.log(`  ${tareasEjecutadas.length} pasos ejecutados en rutinas`);
   }
 
   // --- Relleno del histórico ---

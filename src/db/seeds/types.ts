@@ -89,8 +89,26 @@ export type SeedGroup = {
   equipment: SeedEquipment[];
 };
 
+export type SeedPmTask = {
+  descripcion: string;
+  tipo: "verificacion" | "medicion" | "reemplazo" | "intervencion" | "registro";
+  /** Unidad esperada cuando el paso es una medición. */
+  unidad?: string;
+  /** Un paso no obligatorio cubre lo que puede no aplicar en todos los equipos. */
+  opcional?: boolean;
+  /** Advertencia de seguridad propia del paso. */
+  seguridad?: string;
+};
+
 export type SeedPmTemplate = {
   name: string;
+  /**
+   * Pauta: qué tiene que hacer el mecánico, paso a paso.
+   *
+   * Sin ella el plan preventivo es solo una fecha de vencimiento. Es lo que
+   * convierte "toca la rutina de 500 horas" en algo ejecutable en el equipo.
+   */
+  tareas?: SeedPmTask[];
   /** Disparador de la rutina. Por horas es lo natural en equipos rotativos. */
   trigger: "calendario" | "horas" | "ambos";
   frequencyDays: number | null;
