@@ -4,6 +4,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { diferencias, registrarAuditoria } from "@/lib/audit";
+import { puedeCerrarse } from "@/lib/kpi/closure";
+import { workOrderTasks } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
@@ -25,6 +27,30 @@ function toRow(data: WorkOrderInput) {
     laborCost: data.laborCost.toFixed(2),
     partsCost: data.partsCost.toFixed(2),
   };
+}
+
+/**
+ * Comprueba que la pauta esté resuelta antes de cerrar.
+ *
+ * No se cierra una orden con pasos en blanco: cada paso tiene que quedar con
+ * el nombre de quien lo asumió. Resuelto no es conforme —no conforme y no
+ * aplica también cierran—; lo que no se admite es el blanco.
+ */
+async function verificarPauta(id: number, orgId: string) {
+  const pasos = await db
+    .select({
+      sequence: workOrderTasks.sequence,
+      description: workOrderTasks.description,
+      result: workOrderTasks.result,
+    })
+    .from(workOrderTasks)
+    .where(
+      and(
+        eq(workOrderTasks.workOrderId, id),
+        eq(workOrderTasks.organizationId, orgId),
+      ),
+    );
+  return puedeCerrarse(pasos);
 }
 
 /** Correlativo OT-AAAA-NNNN por año, calculado en la BD para evitar colisiones. */
@@ -82,6 +108,11 @@ export async function updateWorkOrder(
 
   // Se lee el estado previo para registrar solo lo que cambió. Guardar el
   // registro entero antes y después hace el histórico ilegible.
+  if (parsed.data.status === "cerrada") {
+    const pauta = await verificarPauta(id, orgId);
+    if (!pauta.puede) return { ok: false, message: pauta.mensaje };
+  }
+
   const [previa] = await db
     .select()
     .from(workOrders)
@@ -132,6 +163,11 @@ export async function updateWorkOrder(
  */
 export async function closeWorkOrder(id: number): Promise<ActionState> {
   await requireRole("tecnico");
+
+  const orgId = await getActiveOrgId();
+  const pauta = await verificarPauta(id, orgId);
+  if (!pauta.puede) return { ok: false, message: pauta.mensaje };
+
   let advanced = false;
   try {
     await db.transaction(async (tx) => {

@@ -66,6 +66,7 @@ export async function TaskChecklist({
 
   const hechos = pasos.filter((p) => p.result !== null).length;
   const noConformes = pasos.filter((p) => p.result === "no_conforme").length;
+  const pendientes = pasos.length - hechos;
 
   return (
     <Panel
@@ -74,6 +75,17 @@ export async function TaskChecklist({
         noConformes > 0 ? ` · ${noConformes} no conforme${noConformes > 1 ? "s" : ""}` : ""
       }`}
     >
+      {editable && pendientes > 0 && (
+        <p className="border-b border-warn-500/30 bg-warn-500/10 px-5 py-2.5 text-[11px] leading-relaxed text-warn-500">
+          Quedan {pendientes} paso{pendientes > 1 ? "s" : ""} sin registrar.{" "}
+          <span className="text-ink-300">
+            La orden no se puede cerrar hasta resolverlos todos. Cada paso queda
+            con el nombre de quien lo asume, y eso incluye marcarlo como no
+            conforme o no aplica.
+          </span>
+        </p>
+      )}
+
       <ol className="divide-y divide-ink-800">
         {pasos.map((p) => (
           <TaskRow
