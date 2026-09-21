@@ -64,7 +64,15 @@ export default async function EditWorkOrderPage({
         invisible, que es tanto como no tenerla.
       */}
       <div className="px-6 pt-5">
-        <TaskChecklist workOrderId={id} />
+        <TaskChecklist
+          workOrderId={id}
+          // La pauta se ejecuta mientras la orden sigue viva. Una cerrada o
+          // aprobada es el registro de lo que pasó, no un formulario.
+          editable={
+            !["cerrada", "anulada"].includes(workOrder.status) &&
+            !workOrder.approvedBy
+          }
+        />
       </div>
 
       <WorkOrderForm currencySymbol={currencySymbol} action={action} workOrder={workOrder} {...catalogs} />

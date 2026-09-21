@@ -1,8 +1,9 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { workOrderTasks } from "@/db/schema";
+import { pmTasks, workOrderTasks } from "@/db/schema";
 import { Panel } from "@/components/ui";
 import { getActiveOrgId } from "@/lib/org";
+import { TaskRow } from "./task-row";
 
 /**
  * Pauta de la rutina: los pasos que hay que ejecutar en el equipo.
@@ -27,11 +28,32 @@ const RESULTADOS: Record<string, { texto: string; cls: string }> = {
   no_aplica: { texto: "No aplica", cls: "text-ink-500" },
 };
 
-export async function TaskChecklist({ workOrderId }: { workOrderId: number }) {
+export async function TaskChecklist({
+  workOrderId,
+  editable = false,
+}: {
+  workOrderId: number;
+  /** La pauta se ejecuta mientras la orden sigue abierta. */
+  editable?: boolean;
+}) {
   const orgId = await getActiveOrgId();
   const pasos = await db
-    .select()
+    .select({
+      id: workOrderTasks.id,
+      sequence: workOrderTasks.sequence,
+      description: workOrderTasks.description,
+      kind: workOrderTasks.kind,
+      result: workOrderTasks.result,
+      value: workOrderTasks.value,
+      unit: workOrderTasks.unit,
+      notes: workOrderTasks.notes,
+      completedBy: workOrderTasks.completedBy,
+      // La advertencia vive en la plantilla: es propia del paso, no de una
+      // ejecución concreta.
+      safetyNote: pmTasks.safetyNote,
+    })
     .from(workOrderTasks)
+    .leftJoin(pmTasks, eq(pmTasks.id, workOrderTasks.pmTaskId))
     .where(
       and(
         eq(workOrderTasks.organizationId, orgId),
@@ -53,57 +75,22 @@ export async function TaskChecklist({ workOrderId }: { workOrderId: number }) {
       }`}
     >
       <ol className="divide-y divide-ink-800">
-        {pasos.map((p) => {
-          const tipo = TIPOS[p.kind] ?? TIPOS.verificacion;
-          const resultado = p.result ? RESULTADOS[p.result] : null;
-
-          return (
-            <li key={p.id} className="flex gap-3 px-5 py-3">
-              <span className="num mt-0.5 w-5 shrink-0 text-[11px] text-ink-600">
-                {p.sequence}
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tipo.cls}`}
-                  >
-                    {tipo.texto}
-                  </span>
-                  <span className="text-xs leading-relaxed text-ink-200">
-                    {p.description}
-                  </span>
-                </div>
-
-                <div className="mt-1 flex flex-wrap items-baseline gap-3">
-                  {resultado ? (
-                    <span className={`text-[11px] font-medium ${resultado.cls}`}>
-                      {resultado.texto}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-ink-600">Pendiente</span>
-                  )}
-
-                  {p.value !== null && (
-                    <span className="num text-[11px] text-ink-300">
-                      {Number(p.value)} {p.unit ?? ""}
-                    </span>
-                  )}
-
-                  {p.completedBy && (
-                    <span className="text-[11px] text-ink-500">{p.completedBy}</span>
-                  )}
-                </div>
-
-                {p.notes && (
-                  <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
-                    {p.notes}
-                  </p>
-                )}
-              </div>
-            </li>
-          );
-        })}
+        {pasos.map((p) => (
+          <TaskRow
+            key={p.id}
+            id={p.id}
+            sequence={p.sequence}
+            description={p.description}
+            kind={p.kind}
+            result={p.result}
+            value={p.value}
+            unit={p.unit}
+            notes={p.notes}
+            completedBy={p.completedBy}
+            safetyNote={p.safetyNote}
+            editable={editable}
+          />
+        ))}
       </ol>
     </Panel>
   );
