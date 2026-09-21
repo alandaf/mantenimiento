@@ -42,7 +42,7 @@ export function ReadingForm({
           errors={state.errors}
           hint="Valor acumulado que marca el instrumento"
         >
-          <Input name="hours" type="number" min={0} step="0.1" required />
+          <Input name="hours" type="number" min={0} step="0.01" required />
         </Field>
 
         <Field label="Fecha y hora de la lectura" name="takenAt" errors={state.errors}>

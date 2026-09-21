@@ -271,12 +271,19 @@ export function WorkOrderForm({
           Horas y costos
         </h2>
         <div className="grid gap-4 sm:grid-cols-4">
+          {/*
+            step="0.01" y no "0.25". El cuarto de hora parecía cómodo para
+            teclear, pero el navegador rechaza cualquier valor que no sea
+            múltiplo exacto: una orden con 3,74 h registradas no se podía
+            guardar, y el aviso que salía —"los valores válidos más cercanos
+            son 3,5 y 3,75"— no dice nada sobre la causa.
+          */}
           <Field label="Horas estimadas" name="estimatedHours" errors={state.errors}>
             <Input
               name="estimatedHours"
               type="number"
               min={0}
-              step="0.25"
+              step="0.01"
               defaultValue={workOrder?.estimatedHours ?? "0"}
             />
           </Field>
@@ -285,7 +292,7 @@ export function WorkOrderForm({
               name="laborHours"
               type="number"
               min={0}
-              step="0.25"
+              step="0.01"
               defaultValue={workOrder?.laborHours ?? "0"}
             />
           </Field>
