@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s · PMS SIMARP",
   },
   description:
-    "Planned Maintenance System: mantenimiento por horas de marcha, KPIs de confiabilidad y análisis de causa raíz.",
+    "Gestión de mantenimiento: rutinas por calendario y por horas de marcha, KPIs de confiabilidad y análisis de causa raíz.",
 };
 
 /**

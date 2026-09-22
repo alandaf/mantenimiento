@@ -50,7 +50,7 @@ export function LoginForm() {
           required
           autoFocus
           className={input}
-          placeholder="jefe.maquinas@naviera.cl"
+          placeholder="nombre.apellido@empresa.cl"
         />
       </label>
 

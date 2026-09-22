@@ -42,7 +42,7 @@ export function CreateUserForm() {
           name="email"
           type="email"
           required
-          placeholder="segundo.maquinas@naviera.cl"
+          placeholder="nombre.apellido@empresa.cl"
         />
       </Field>
 

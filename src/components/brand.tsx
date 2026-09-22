@@ -11,7 +11,7 @@ import path from "node:path";
 export const BRAND = {
   name: "SIMARP",
   product: "PMS SIMARP",
-  tagline: "Planned Maintenance System",
+  tagline: "Gestión de mantenimiento",
 } as const;
 
 const CANDIDATES = [

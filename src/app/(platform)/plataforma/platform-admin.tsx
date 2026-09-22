@@ -255,7 +255,7 @@ export function CreateAdminForm({
           name="email"
           type="email"
           required
-          placeholder="jefe.maquinas@naviera.cl"
+          placeholder="nombre.apellido@empresa.cl"
         />
       </Field>
 
