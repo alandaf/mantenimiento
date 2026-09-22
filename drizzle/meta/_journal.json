@@ -43,6 +43,13 @@
       "when": 1789953873159,
       "tag": "0005_long_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790021608738,
+      "tag": "0006_dark_rattler",
+      "breakpoints": true
     }
   ]
 }

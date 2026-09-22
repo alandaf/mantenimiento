@@ -2,6 +2,8 @@ import { and, asc, eq, ne } from "drizzle-orm";
 import { getFormatters } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui";
+import { AttachmentsPanel } from "@/components/attachments-panel";
+import { AuditTrail } from "@/components/audit-trail";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
 import { assets } from "@/db/schema";
@@ -40,6 +42,14 @@ export default async function EditAssetPage({
     <>
       <PageHeader title={asset.name} subtitle={`${asset.tag} · editar ficha`} />
       <AssetForm currencySymbol={currencySymbol} action={action} asset={asset} parents={parents} />
+      <div className="grid gap-5 px-6 pb-6 lg:grid-cols-2">
+        <AttachmentsPanel
+          entidad="activo"
+          entidadId={id}
+          hint="manuales, planos y fichas del equipo"
+        />
+        <AuditTrail entidad="activo" entidadId={id} />
+      </div>
     </>
   );
 }

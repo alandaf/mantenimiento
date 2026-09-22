@@ -44,6 +44,10 @@ services:
       # inadvertido.
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?falta BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?falta BETTER_AUTH_URL}
+      UPLOAD_DIR: /app/data/adjuntos
+    # La misma carpeta que `web`: la carga de demostración deja aquí sus fotos.
+    volumes:
+      - /opt/pms-data/adjuntos:/app/data/adjuntos
     depends_on:
       db:
         condition: service_healthy
@@ -65,6 +69,12 @@ services:
       # producción invalida todas las sesiones que firma.
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?falta BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?falta BETTER_AUTH_URL}
+      UPLOAD_DIR: /app/data/adjuntos
+    # Adjuntos en una carpeta del host, fuera del contenedor: si vivieran
+    # dentro, cada despliegue los borraría. La carpeta debe pertenecer al
+    # usuario 1001 (`nextjs`), que es con el que corre la aplicación.
+    volumes:
+      - /opt/pms-data/adjuntos:/app/data/adjuntos
     depends_on:
       db:
         condition: service_healthy

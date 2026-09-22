@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AuditTrail } from "@/components/audit-trail";
 import { MeasurementsPanel } from "@/components/measurements-panel";
 import { MaterialsPanel } from "@/components/materials-panel";
+import { AttachmentsPanel } from "@/components/attachments-panel";
 import { TaskChecklist } from "@/components/task-checklist";
 import { assets } from "@/db/schema";
 import { exigeSegundaFirma } from "@/lib/kpi/approval";
@@ -106,6 +107,11 @@ export default async function EditWorkOrderPage({
               totalPasos={pasos.length}
             />
           )}
+          <AttachmentsPanel
+            entidad="orden_trabajo"
+            entidadId={id}
+            hint="evidencia e informes"
+          />
           <MeasurementsPanel workOrderId={id} editable={abierta && !workOrder.approvedBy} />
           <MaterialsPanel
             workOrderId={id}

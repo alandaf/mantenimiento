@@ -10,5 +10,6 @@ export * from "./settings";
 export * from "./ai-insights";
 export * from "./audit";
 export * from "./measurements";
+export * from "./attachments";
 // Tablas de autenticación generadas por la CLI de better-auth.
 export * from "./auth";

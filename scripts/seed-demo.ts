@@ -14,6 +14,7 @@ import { sql } from "drizzle-orm";
 import { db, sqlClient } from "../src/db";
 import { settings } from "../src/db/schema";
 import { DATASETS, seed } from "../src/db/seed";
+import { sembrarAdjuntosGlp } from "../src/db/seeds/adjuntos-glp";
 
 async function main() {
   const [slug, datasetKey, nombreArg] = process.argv.slice(2);
@@ -58,6 +59,9 @@ async function main() {
     // prisa; aquí el identificador se resuelve una vez y se reutiliza.
     console.log(`→ Borrando los datos actuales de "${slug}"…`);
     for (const tabla of [
+      // Los documentos de la demo apuntan a activos y órdenes que se van a
+      // borrar. Los archivos quedan en el disco; son pocos KB.
+      "attachments",
       "work_orders",
       "pm_plans",
       "meter_readings",
@@ -85,6 +89,7 @@ async function main() {
     .onConflictDoNothing();
 
   await seed(dataset, org.id, nombre);
+  if (datasetKey.toLowerCase() === "glp") await sembrarAdjuntosGlp(org.id);
 
   console.log(`
 ✔ ${nombre} sembrada con el set "${datasetKey}".

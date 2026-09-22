@@ -46,3 +46,13 @@ mv "$PARCIAL" "$ARCHIVO"
 find "$DESTINO" -name 'pms_*.sql.gz' -mtime "+$DIAS_A_CONSERVAR" -delete
 
 echo "$(date +'%F %T') ✔ $ARCHIVO ($((TAMANO/1024)) KB) · copias: $(find "$DESTINO" -name 'pms_*.sql.gz' | wc -l)"
+
+# Adjuntos: una copia espejo, no una por día. Los archivos nunca se borran ni
+# se modifican —retirar un documento solo lo oculta—, así que copiar lo nuevo
+# basta, y catorce copias diarias de las mismas fotos llenarían el disco.
+ADJUNTOS="${ADJUNTOS:-/opt/pms-data/adjuntos}"
+if [ -d "$ADJUNTOS" ]; then
+  mkdir -p "$DESTINO/adjuntos"
+  cp -a -u "$ADJUNTOS/." "$DESTINO/adjuntos/"
+  echo "$(date +'%F %T') ✔ adjuntos: $(du -sh "$DESTINO/adjuntos" | cut -f1)"
+fi

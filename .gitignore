@@ -11,3 +11,6 @@ build/
 next-env.d.ts
 tsconfig.tsbuildinfo
 coverage/
+
+# Adjuntos subidos en desarrollo
+/data/
