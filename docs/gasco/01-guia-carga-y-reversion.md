@@ -65,6 +65,14 @@ los activos y las órdenes, y los indicadores quedarían al doble sin que nada l
 Después, desde `https://pms.simarp.net/plataforma`, el operador de la plataforma asigna un
 administrador a la instalación.
 
+**Después de cada carga**, devuelva la carpeta de adjuntos a la aplicación. El script corre como
+`root` y crea la carpeta de la instalación a su nombre. Sin este paso, la aplicación muestra los
+documentos cargados, pero no puede guardar los que suban los usuarios:
+
+```bash
+chown -R 1001:1001 /opt/pms-data/adjuntos
+```
+
 ### 3.2 Por qué se montan `scripts` y `src`
 
 El servicio `migrate` usa la imagen construida en el último despliegue. Si el generador cambió
@@ -80,6 +88,7 @@ Es lo habitual después de una sesión en la que se crearon, cerraron o editaron
 ```bash
 pmsc run --rm -v /opt/pms/scripts:/app/scripts -v /opt/pms/src:/app/src \
   migrate pnpm tsx scripts/seed-demo.ts planta-glp-metropolitana glp "Planta GLP Metropolitana" --rehacer
+chown -R 1001:1001 /opt/pms-data/adjuntos
 ```
 
 Qué borra, **solo de esta instalación**:
