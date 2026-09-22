@@ -58,7 +58,7 @@ export const GLOSSARY = {
   },
   criticidad: {
     title: "Criticidad",
-    body: "Cuánto daña a la operación que ese equipo se detenga. A es crítico —su parada detiene la producción o compromete la seguridad—, B es importante pero tiene respaldo, C es de apoyo. No mide qué tan caro es el equipo, sino qué tanto duele perderlo.",
+    body: "Cuánto daña a la operación que ese equipo se detenga. Crítica: su parada detiene la producción o compromete la seguridad. Alta: afecta mucho a la operación, aunque a veces tiene respaldo. Media: importante, pero la operación sigue. Baja: equipo de apoyo. No mide qué tan caro es el equipo, sino qué tanto duele perderlo.",
   },
   correctivo: {
     title: "Mantenimiento correctivo",
