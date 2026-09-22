@@ -1,11 +1,11 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, notInArray, sql } from "drizzle-orm";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { diferencias, registrarAuditoria } from "@/lib/audit";
 import { puedeCerrarse } from "@/lib/kpi/closure";
-import { workOrderTasks } from "@/db/schema";
+import { assets, pmPlans, pmTasks, workOrderTasks } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
@@ -62,6 +62,111 @@ async function nextCode(orgId: string): Promise<string> {
     WHERE organization_id = ${orgId} AND code LIKE ${`OT-${year}-%`}
   `)) as unknown as Array<{ next: number }>;
   return `OT-${year}-${String(row.next).padStart(4, "0")}`;
+}
+
+/**
+ * Emite la orden de una rutina preventiva, con su pauta.
+ *
+ * La pauta se copia en el momento: la orden conserva los pasos que se pidieron
+ * ese día aunque la rutina cambie después. Si la rutina ya tiene una orden
+ * viva, no se emite otra: dos órdenes para la misma mantención terminan con
+ * una ejecutada y la otra olvidada, contando como pendiente para siempre.
+ */
+export async function generatePmWorkOrder(planId: number): Promise<ActionState> {
+  await requireRole("planificador");
+  const orgId = await getActiveOrgId();
+
+  const [plan] = await db
+    .select({
+      id: pmPlans.id,
+      name: pmPlans.name,
+      assetId: pmPlans.assetId,
+      estimatedHours: pmPlans.estimatedHours,
+      active: pmPlans.active,
+      tag: assets.tag,
+      criticality: assets.criticality,
+    })
+    .from(pmPlans)
+    .innerJoin(assets, eq(assets.id, pmPlans.assetId))
+    .where(and(eq(pmPlans.id, planId), eq(pmPlans.organizationId, orgId)))
+    .limit(1);
+  if (!plan) return { ok: false, message: "Esa rutina no existe." };
+  if (!plan.active) return { ok: false, message: "La rutina está inactiva." };
+
+  const [viva] = await db
+    .select({ id: workOrders.id, code: workOrders.code })
+    .from(workOrders)
+    .where(
+      and(
+        eq(workOrders.organizationId, orgId),
+        eq(workOrders.pmPlanId, planId),
+        notInArray(workOrders.status, ["cerrada", "anulada"]),
+      ),
+    )
+    .limit(1);
+  if (viva) {
+    return {
+      ok: false,
+      message: `Esta rutina ya tiene una orden abierta: ${viva.code}. Ciérrala o anúlala antes de emitir otra.`,
+    };
+  }
+
+  const plantilla = await db
+    .select()
+    .from(pmTasks)
+    .where(and(eq(pmTasks.pmPlanId, planId), eq(pmTasks.organizationId, orgId)))
+    .orderBy(asc(pmTasks.sequence), asc(pmTasks.id));
+
+  let creadaId: number;
+  try {
+    const code = await nextCode(orgId);
+    creadaId = await db.transaction(async (tx) => {
+      const [creada] = await tx
+        .insert(workOrders)
+        .values({
+          organizationId: orgId,
+          code,
+          assetId: plan.assetId,
+          pmPlanId: plan.id,
+          type: "preventivo",
+          status: "abierta",
+          // Un preventivo de un equipo crítico no espera como uno de apoyo.
+          priority: plan.criticality === "critica" ? 2 : 3,
+          title: `${plan.name} · ${plan.tag}`,
+          estimatedHours: plan.estimatedHours,
+          reportedAt: new Date(),
+        })
+        .returning({ id: workOrders.id });
+
+      if (plantilla.length > 0) {
+        await tx.insert(workOrderTasks).values(
+          plantilla.map((t) => ({
+            organizationId: orgId,
+            workOrderId: creada.id,
+            pmTaskId: t.id,
+            sequence: t.sequence,
+            description: t.description,
+            kind: t.kind,
+            unit: t.expectedUnit,
+          })),
+        );
+      }
+      return creada.id;
+    });
+  } catch {
+    return { ok: false, message: "No se pudo emitir la orden." };
+  }
+
+  await registrarAuditoria({
+    entidad: "orden_trabajo",
+    entidadId: creadaId,
+    accion: "crear",
+    cambios: { "Emitida desde la rutina": { antes: null, despues: plan.name } },
+  });
+
+  revalidatePath("/ordenes");
+  revalidatePath(`/preventivo/${planId}`);
+  redirect(`/ordenes/${creadaId}`);
 }
 
 export async function createWorkOrder(

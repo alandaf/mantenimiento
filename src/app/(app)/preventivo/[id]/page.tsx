@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, notInArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { assets, pmPlans, pmTasks } from "@/db/schema";
+import { assets, pmPlans, pmTasks, workOrders } from "@/db/schema";
 import { AuditTrail } from "@/components/audit-trail";
 import { Badge, PageHeader, Panel } from "@/components/ui";
 import { getActiveOrgId } from "@/lib/org";
 import { hasRole } from "@/lib/roles";
 import { requireSession } from "@/lib/session";
+import { GeneratePmButton } from "./generate-button";
 import { PmTaskEditor } from "./pm-task-editor";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,21 @@ export default async function PlanPreventivoPage({
     .where(and(eq(pmTasks.pmPlanId, id), eq(pmTasks.organizationId, orgId)))
     .orderBy(asc(pmTasks.sequence), asc(pmTasks.id));
 
+  // La orden viva de esta rutina, si la hay: se muestra en lugar del botón,
+  // para no emitir dos órdenes de la misma mantención.
+  const [abierta] = await db
+    .select({ id: workOrders.id, code: workOrders.code, status: workOrders.status })
+    .from(workOrders)
+    .where(
+      and(
+        eq(workOrders.organizationId, orgId),
+        eq(workOrders.pmPlanId, id),
+        notInArray(workOrders.status, ["cerrada", "anulada"]),
+      ),
+    )
+    .orderBy(desc(workOrders.reportedAt))
+    .limit(1);
+
   const editable = hasRole(session.user.role, "planificador");
   const cadencia = [
     plan.frequencyHours && `cada ${plan.frequencyHours.toLocaleString()} h`,
@@ -90,6 +106,18 @@ export default async function PlanPreventivoPage({
             {plan.assetTag} · {plan.assetName}
           </Link>
           <Badge value={plan.criticality} />
+          <div className="ml-auto flex items-center gap-3">
+            {abierta ? (
+              <Link
+                href={`/ordenes/${abierta.id}`}
+                className="rounded-lg border border-ink-700 px-4 py-2 text-sm text-ink-200 transition hover:bg-ink-800"
+              >
+                Orden abierta: {abierta.code} →
+              </Link>
+            ) : (
+              editable && <GeneratePmButton planId={id} pasos={pasos.length} />
+            )}
+          </div>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
