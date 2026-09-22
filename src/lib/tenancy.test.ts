@@ -28,7 +28,30 @@ const TABLAS_DE_DOMINIO = [
   "technicians",
   "ai_insights",
   "settings",
+  "pm_tasks",
+  "work_order_tasks",
+  "measurements",
+  "work_order_materials",
+  "audit_log",
+  "attachments",
 ] as const;
+
+/** Las mismas tablas, con el nombre que usa el constructor de consultas. */
+const VARIABLES_DE_DOMINIO = [
+  "assets", "workOrders", "pmPlans", "meterReadings", "failureModes", "technicians",
+  "aiInsights", "settings", "pmTasks", "workOrderTasks", "measurements",
+  "workOrderMaterials", "auditLog", "attachments",
+];
+
+/**
+ * Consultas del constructor que no necesitan filtro propio, con el motivo.
+ * Añadir una aquí es una decisión: debe poder defenderse en una línea.
+ */
+const EXCEPCIONES_CONSTRUCTOR: Record<string, string> = {
+  // Recibe una orden ya verificada como propia por quien la llama (el cierre),
+  // y sigue sus claves foráneas dentro de la misma transacción.
+  [path.join("lib", "actions", "advance-plan.ts")]: "orden verificada por el llamador",
+};
 
 function archivosTs(dir: string): string[] {
   const salida: string[] = [];
@@ -112,6 +135,33 @@ describe("separación de datos por instalación", () => {
 
     // Si esto falla, hay una consulta que devuelve datos de todas las
     // instalaciones a la vez.
+    expect(infractoras).toEqual([]);
+  });
+
+  it("toda consulta del constructor a una tabla de dominio filtra por instalación", () => {
+    // La prueba anterior solo ve las consultas escritas con sql`…`. Esta cubre
+    // las de `.from(tabla)`, `.update(tabla)` y `.delete(tabla)`, que es donde
+    // se coló el análisis de priorización de una planta mostrado en otra.
+    const infractoras: string[] = [];
+    const patron = new RegExp(`\\.(from|update|delete)\\((${VARIABLES_DE_DOMINIO.join("|")})\\)`, "g");
+
+    for (const archivo of archivosTs(RAIZ)) {
+      const relativo = path.relative(RAIZ, archivo);
+      if (EXCEPCIONES_CONSTRUCTOR[relativo]) continue;
+      if (archivo.includes(`${path.sep}db${path.sep}`)) continue;
+
+      const contenido = readFileSync(archivo, "utf8");
+      for (const m of contenido.matchAll(patron)) {
+        // La sentencia termina en el primer `;` de fin de línea.
+        const resto = contenido.slice(m.index! + m[0].length, m.index! + m[0].length + 900);
+        const sentencia = resto.split(/;\s*\n/)[0];
+        if (!/organizationId|orgId/.test(sentencia)) {
+          const linea = contenido.slice(0, m.index).split("\n").length;
+          infractoras.push(`${relativo}:${linea} → ${m[0]}`);
+        }
+      }
+    }
+
     expect(infractoras).toEqual([]);
   });
 });

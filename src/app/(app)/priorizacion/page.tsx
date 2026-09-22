@@ -1,4 +1,5 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import { getActiveOrgId } from "@/lib/org";
 import { getFormatters } from "@/lib/config";
 import { requireRole } from "@/lib/session";
 import Link from "next/link";
@@ -24,12 +25,15 @@ export default async function PrioritizacionPage() {
   const { money } = await getFormatters();
   // Ocultar el enlace del menú no basta: hay que cerrar la página.
   await requireRole("tecnico");
+  const orgId = await getActiveOrgId();
   const [orders, [latest]] = await Promise.all([
     getOpenWorkOrders(),
     db
       .select()
       .from(aiInsights)
-      .where(eq(aiInsights.scope, "priorizacion"))
+      // Sin el filtro por instalación se mostraba el último análisis de
+      // cualquiera: una planta veía las órdenes de otra.
+      .where(and(eq(aiInsights.scope, "priorizacion"), eq(aiInsights.organizationId, orgId)))
       .orderBy(desc(aiInsights.createdAt))
       .limit(1),
   ]);

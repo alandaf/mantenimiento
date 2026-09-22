@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { getActiveOrgId } from "@/lib/org";
-import { meterReadings } from "@/db/schema";
+import { assets, meterReadings } from "@/db/schema";
 import type { ActionState } from "@/lib/validation";
 
 const readingSchema = z.object({
@@ -51,6 +51,17 @@ export async function addMeterReading(
   }
 
   const { assetId, hours, takenAt, note } = parsed.data;
+  const orgId = await getActiveOrgId();
+
+  // El activo llega del formulario: se comprueba que sea de esta instalación.
+  // Sin esto, un id ajeno dejaba leer las horas de un equipo de otra planta en
+  // el mensaje de error, y colgarle una lectura.
+  const [propio] = await db
+    .select({ id: assets.id })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.organizationId, orgId)))
+    .limit(1);
+  if (!propio) return { ok: false, message: "Ese activo no existe." };
 
   if (takenAt.getTime() > Date.now() + 86_400_000) {
     return {
@@ -64,7 +75,7 @@ export async function addMeterReading(
   const [previous] = await db
     .select()
     .from(meterReadings)
-    .where(and(eq(meterReadings.assetId, assetId), lt(meterReadings.takenAt, takenAt)))
+    .where(and(eq(meterReadings.organizationId, orgId), eq(meterReadings.assetId, assetId), lt(meterReadings.takenAt, takenAt)))
     .orderBy(desc(meterReadings.takenAt))
     .limit(1);
 
@@ -94,7 +105,7 @@ export async function addMeterReading(
   const [following] = await db
     .select()
     .from(meterReadings)
-    .where(and(eq(meterReadings.assetId, assetId), gt(meterReadings.takenAt, takenAt)))
+    .where(and(eq(meterReadings.organizationId, orgId), eq(meterReadings.assetId, assetId), gt(meterReadings.takenAt, takenAt)))
     .orderBy(meterReadings.takenAt)
     .limit(1);
 
@@ -108,7 +119,7 @@ export async function addMeterReading(
 
   try {
     await db.insert(meterReadings).values({
-      organizationId: await getActiveOrgId(),
+      organizationId: orgId,
       assetId,
       hours: hours.toFixed(1),
       takenAt,
