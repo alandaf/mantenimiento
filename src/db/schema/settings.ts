@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Configuración de la instalación, en base de datos y no en variables de
@@ -32,6 +32,15 @@ export const settings = pgTable("settings", {
 
   /** Notas del administrador. No se usa en cálculos. */
   notes: text("notes"),
+
+  /**
+   * Nombre que la instalación da a cada nivel de permiso. Solo cambia la
+   * etiqueta: los cinco niveles y lo que puede cada uno son los mismos en
+   * todas partes. Un buque tiene «Jefe de Máquinas» y una planta «Jefe de
+   * Mantenimiento», pero los dos aprueban el trabajo. Nulo, o un nivel
+   * ausente, usa el nombre por defecto de `ROLES`.
+   */
+  roleLabels: jsonb("role_labels").$type<Partial<Record<string, string>>>(),
 
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

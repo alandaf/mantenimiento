@@ -7,6 +7,8 @@ import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { SUPPORTED_CURRENCIES, SUPPORTED_LOCALES } from "@/lib/config";
 import { getActiveOrgId } from "@/lib/org";
+import { registrarAuditoria } from "@/lib/audit";
+import { ROLES, type Role } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
 import type { ActionState } from "@/lib/validation";
 
@@ -73,6 +75,59 @@ export async function updateSettings(
     ok: true,
     message: "Configuración guardada. Los montos ya usan la nueva moneda.",
   };
+}
+
+/**
+ * Nombres de los roles de la instalación.
+ *
+ * Solo cambia cómo se llaman. Los permisos van con la clave interna, que es
+ * la misma en todas las instalaciones: renombrar «Técnico» a «Mecánico» no le
+ * da ni le quita nada a nadie.
+ */
+export async function updateRoleLabels(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const orgId = await getActiveOrgId();
+
+  const nuevos: Record<string, string> = {};
+  for (const clave of Object.keys(ROLES) as Role[]) {
+    const v = String(formData.get(clave) ?? "").trim();
+    if (v.length > 40) return { ok: false, message: `El nombre «${v.slice(0, 20)}…» supera los 40 caracteres.` };
+    if (v && v !== ROLES[clave]) nuevos[clave] = v;
+  }
+
+  // Dos roles con el mismo nombre harían imposible saber, en la lista de
+  // usuarios, quién aprueba y quién no.
+  const finales = (Object.keys(ROLES) as Role[]).map((k) => (nuevos[k] ?? ROLES[k]).toLowerCase());
+  if (new Set(finales).size !== finales.length) {
+    return { ok: false, message: "Dos roles no pueden llamarse igual." };
+  }
+
+  const [antes] = await db
+    .select({ roleLabels: settings.roleLabels })
+    .from(settings)
+    .where(eq(settings.organizationId, orgId))
+    .limit(1);
+
+  await db
+    .insert(settings)
+    .values({ organizationId: orgId, roleLabels: nuevos })
+    .onConflictDoUpdate({ target: settings.organizationId, set: { roleLabels: nuevos } });
+
+  const cambios: Record<string, { antes: unknown; despues: unknown }> = {};
+  for (const k of Object.keys(ROLES) as Role[]) {
+    const a = antes?.roleLabels?.[k] ?? ROLES[k];
+    const d = nuevos[k] ?? ROLES[k];
+    if (a !== d) cambios[`Nombre del rol ${ROLES[k]}`] = { antes: a, despues: d };
+  }
+  if (Object.keys(cambios).length > 0) {
+    await registrarAuditoria({ entidad: "configuracion", entidadId: orgId, accion: "modificar", cambios });
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Nombres de los roles guardados." };
 }
 
 export async function readSettings() {

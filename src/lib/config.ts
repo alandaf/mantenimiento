@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { settings, type Settings } from "@/db/schema";
+import { ROLES, type Role } from "./roles";
 
 /**
  * Configuración regional de la instalación.
@@ -86,6 +87,7 @@ export const getSettings = cache(async (): Promise<Settings> => {
     currency: env("APP_CURRENCY", "CLP").toUpperCase(),
     locale: env("APP_LOCALE", "es-CL"),
     notes: null,
+    roleLabels: null,
     updatedAt: new Date(),
   };
 
@@ -93,6 +95,22 @@ export const getSettings = cache(async (): Promise<Settings> => {
   // intentarían insertar la misma fila.
   await db.insert(settings).values(seeded).onConflictDoNothing();
   return seeded;
+});
+
+/**
+ * Nombre de cada rol en la instalación activa: el de la configuración si lo
+ * tiene, el de `ROLES` si no. Todo lo que muestra un rol en pantalla pasa por
+ * aquí; la clave interna (`jefe`, `tecnico`…) es la que decide los permisos y
+ * no cambia.
+ */
+export const getRoleLabels = cache(async (): Promise<Record<Role, string>> => {
+  const propios = (await getSettings()).roleLabels ?? {};
+  const etiquetas = { ...ROLES } as Record<Role, string>;
+  for (const k of Object.keys(ROLES) as Role[]) {
+    const v = propios[k]?.trim();
+    if (v) etiquetas[k] = v;
+  }
+  return etiquetas;
 });
 
 export type Formatters = {

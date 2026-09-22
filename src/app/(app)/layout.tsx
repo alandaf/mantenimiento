@@ -5,7 +5,8 @@ import { NavLink } from "@/components/nav-link";
 import { UserMenu } from "@/components/user-menu";
 import { redirect } from "next/navigation";
 import { isSuperadmin } from "@/lib/roles";
-import { hasRole, requireSession, ROLES, type Role } from "@/lib/session";
+import { hasRole, requireSession, type Role } from "@/lib/session";
+import { getRoleLabels } from "@/lib/config";
 
 /**
  * Layout de la aplicación autenticada.
@@ -73,7 +74,7 @@ export default async function AppLayout({
         <UserMenu
           name={session.user.name}
           email={session.user.email}
-          role={ROLES[role] ?? role}
+          role={(await getRoleLabels())[role] ?? role}
         />
       </aside>
 

@@ -7,15 +7,13 @@ import {
   createUser,
   toggleUserAccess,
 } from "@/lib/actions/users";
-import { ROLES } from "@/lib/roles";
 import type { ActionState } from "@/lib/validation";
 
 const INITIAL: ActionState = { ok: false };
 
-const ROLE_OPTIONS = Object.entries(ROLES).map(([value, label]) => ({
-  value,
-  label,
-}));
+/** Los nombres llegan de la instalación: cada una llama a sus roles a su manera. */
+type Etiquetas = Record<string, string>;
+const opciones = (e: Etiquetas) => Object.entries(e).map(([value, label]) => ({ value, label }));
 
 export type UserRow = {
   id: string;
@@ -26,7 +24,7 @@ export type UserRow = {
   createdAt: Date;
 };
 
-export function CreateUserForm() {
+export function CreateUserForm({ etiquetas }: { etiquetas: Etiquetas }) {
   const [state, formAction] = useActionState(createUser, INITIAL);
 
   return (
@@ -56,7 +54,7 @@ export function CreateUserForm() {
       </Field>
 
       <Field label="Rol" name="role" errors={state.errors}>
-        <Select name="role" defaultValue="tecnico" options={ROLE_OPTIONS} />
+        <Select name="role" defaultValue="tecnico" options={opciones(etiquetas)} />
       </Field>
 
       <SubmitButton>Crear cuenta</SubmitButton>
@@ -67,9 +65,11 @@ export function CreateUserForm() {
 export function UserRowActions({
   user,
   isSelf,
+  etiquetas,
 }: {
   user: UserRow;
   isSelf: boolean;
+  etiquetas: Etiquetas;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<ActionState | null>(null);
@@ -93,7 +93,7 @@ export function UserRowActions({
           }
           className="rounded-md border border-ink-700 bg-ink-850 px-2 py-1 text-[11px] text-ink-200 outline-none focus:border-brand-500 disabled:opacity-50"
         >
-          {ROLE_OPTIONS.map((o) => (
+          {opciones(etiquetas).map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>

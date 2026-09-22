@@ -50,6 +50,13 @@
       "when": 1790021608738,
       "tag": "0006_dark_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790050575518,
+      "tag": "0007_typical_doorman",
+      "breakpoints": true
     }
   ]
 }

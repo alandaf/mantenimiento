@@ -2,11 +2,14 @@ import { PageHeader, Panel } from "@/components/ui";
 import {
   currencyLabel,
   getFormatters,
+  getRoleLabels,
   getSettings,
   SUPPORTED_CURRENCIES,
   SUPPORTED_LOCALES,
 } from "@/lib/config";
 import { requireRole } from "@/lib/session";
+import { ROLES } from "@/lib/roles";
+import { RoleLabelsForm } from "./role-labels-form";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +28,7 @@ const LOCALE_LABELS: Record<string, string> = {
 
 export default async function ConfiguracionPage() {
   await requireRole("admin");
-  const [current, fmt] = await Promise.all([getSettings(), getFormatters()]);
+  const [current, fmt, etiquetas] = await Promise.all([getSettings(), getFormatters(), getRoleLabels()]);
 
   const sample = new Date();
 
@@ -33,7 +36,7 @@ export default async function ConfiguracionPage() {
     <>
       <PageHeader
         title="Configuración"
-        subtitle="Moneda, formato regional y nombre de la instalación"
+        subtitle="Nombre de la instalación, moneda, formato regional y nombres de los roles"
       />
 
       <div className="grid gap-5 p-6 xl:grid-cols-3">
@@ -57,6 +60,10 @@ export default async function ConfiguracionPage() {
         </Panel>
 
         <div className="space-y-5">
+          <Panel title="Nombres de los roles">
+            <RoleLabelsForm actuales={etiquetas} porDefecto={{ ...ROLES }} />
+          </Panel>
+
           <Panel title="Cómo se verá">
             <dl className="space-y-3 px-5 py-4 text-xs">
               <div>

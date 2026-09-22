@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BRAND, BrandMark } from "@/components/brand";
 import { PageHeader, Panel } from "@/components/ui";
-import { isSuperadmin, ROLES, type Role } from "@/lib/roles";
+import { isSuperadmin, type Role } from "@/lib/roles";
+import { getRoleLabels } from "@/lib/config";
 import { requireSession } from "@/lib/session";
 import { PasswordForm, ProfileForm } from "./profile-forms";
 
@@ -49,7 +50,7 @@ export default async function PerfilPage() {
               <span className="text-brand-300">
                 {esOperador
                   ? "Operador de plataforma"
-                  : (ROLES[(session.user.role ?? "lectura") as Role] ??
+                  : ((await getRoleLabels())[(session.user.role ?? "lectura") as Role] ??
                     session.user.role)}
               </span>
               <br />

@@ -1,7 +1,7 @@
 import { EmptyState, PageHeader, Panel } from "@/components/ui";
-import { getFormatters } from "@/lib/config";
+import { getFormatters, getRoleLabels } from "@/lib/config";
 import { listUsers } from "@/lib/actions/users";
-import { requireRole, ROLES, type Role } from "@/lib/session";
+import { requireRole, type Role } from "@/lib/session";
 import { CreateUserForm, UserRowActions } from "./user-admin";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export default async function UsuariosPage() {
   const { dateFmt } = await getFormatters();
   const session = await requireRole("admin");
   const users = await listUsers();
+  const etiquetas = await getRoleLabels();
 
   const active = users.filter((u) => !u.banned).length;
 
@@ -56,7 +57,7 @@ export default async function UsuariosPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-xs text-brand-300">
-                        {ROLES[(u.role ?? "lectura") as Role] ?? u.role}
+                        {etiquetas[(u.role ?? "lectura") as Role] ?? u.role}
                       </td>
                       <td className="num px-5 py-3 text-xs text-ink-400">
                         {dateFmt.format(u.createdAt)}
@@ -65,6 +66,7 @@ export default async function UsuariosPage() {
                         <UserRowActions
                           user={u}
                           isSelf={u.id === session.user.id}
+                          etiquetas={etiquetas}
                         />
                       </td>
                     </tr>
@@ -77,17 +79,17 @@ export default async function UsuariosPage() {
 
         <div className="space-y-5">
           <Panel title="Nueva cuenta">
-            <CreateUserForm />
+            <CreateUserForm etiquetas={etiquetas} />
           </Panel>
 
           <Panel title="Qué puede hacer cada rol">
             <dl className="space-y-2.5 px-5 py-4 text-xs leading-relaxed">
               {[
-                ["Administrador", "Todo, más la gestión de cuentas."],
-                ["Jefe de Máquinas", "Todo el mantenimiento; no gestiona cuentas."],
-                ["Planificador", "Además importa datos y planifica rutinas."],
-                ["Técnico", "Registra lecturas, ejecuta y cierra órdenes."],
-                ["Solo lectura", "Consulta tableros y reportes, sin modificar."],
+                [etiquetas.admin, "Todo, más la gestión de cuentas y la configuración."],
+                [etiquetas.jefe, "Todo el mantenimiento, incluida la aprobación del trabajo; no gestiona cuentas."],
+                [etiquetas.planificador, "Además edita activos y pautas, e importa datos."],
+                [etiquetas.tecnico, "Registra lecturas, ejecuta y cierra órdenes."],
+                [etiquetas.lectura, "Consulta tableros y reportes, sin modificar."],
               ].map(([role, desc]) => (
                 <div key={role}>
                   <dt className="font-medium text-ink-100">{role}</dt>

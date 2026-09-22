@@ -16,6 +16,12 @@ import { settings } from "../src/db/schema";
 import { DATASETS, seed } from "../src/db/seed";
 import { sembrarAdjuntosGlp } from "../src/db/seeds/adjuntos-glp";
 
+const ROLES_POR_DATASET: Record<string, Record<string, string>> = {
+  glp: { jefe: "Jefe de Mantenimiento", tecnico: "Técnico de Mantenimiento" },
+  minera: { jefe: "Jefe de Mantenimiento" },
+  industrial: { jefe: "Jefe de Mantenimiento" },
+};
+
 async function main() {
   const [slug, datasetKey, nombreArg] = process.argv.slice(2);
   const dataset = datasetKey ? DATASETS[datasetKey.toLowerCase()] : undefined;
@@ -78,6 +84,10 @@ async function main() {
     // sin instalación a quien ya tiene usuario.
   }
 
+  // Nombres de rol de partida según el tipo de instalación. En tierra no hay
+  // «Jefe de Máquinas». Solo se escriben si la instalación aún no tiene los
+  // suyos: rehacer la demo no pisa lo que el administrador haya cambiado.
+  const roleLabels = ROLES_POR_DATASET[datasetKey.toLowerCase()] ?? null;
   await db
     .insert(settings)
     .values({
@@ -85,8 +95,15 @@ async function main() {
       installationName: nombre,
       currency: "CLP",
       locale: "es-CL",
+      roleLabels,
     })
     .onConflictDoNothing();
+  if (roleLabels) {
+    await db.execute(sql`
+      UPDATE settings SET role_labels = ${JSON.stringify(roleLabels)}::jsonb
+      WHERE organization_id = ${org.id} AND role_labels IS NULL
+    `);
+  }
 
   await seed(dataset, org.id, nombre);
   if (datasetKey.toLowerCase() === "glp") await sembrarAdjuntosGlp(org.id);
