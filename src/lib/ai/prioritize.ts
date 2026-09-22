@@ -121,7 +121,15 @@ Reglas:
   La justificación es una o dos frases con cifras, no un párrafo.
 - Deja patron_detectado como cadena vacía si no encontraste evidencia de un patrón.`;
 
-const MAX_ITERATIONS = 12;
+const MAX_ITERATIONS = 6;
+
+/**
+ * Tiempo máximo de investigación. Pasado este plazo, la siguiente vuelta se
+ * pide sin herramientas: el modelo tiene que responder con lo que ya reunió.
+ * Sin tope, con cincuenta órdenes abiertas el ciclo superaba los 120 s del
+ * proxy y el usuario veía un error en vez de un análisis algo menos completo.
+ */
+const PRESUPUESTO_MS = 90_000;
 
 export type PrioritizationRun = {
   result: Prioritization;
@@ -180,6 +188,10 @@ export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
       `\n\nInvestiga con las herramientas y devuelve el ranking priorizado para hoy.`,
   });
 
+  const inicio = Date.now();
+  // La misma petición sin herramientas: obliga a cerrar con la respuesta.
+  const { tools: _sinUso, ...cierre } = baseRequest;
+
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const pending = (interaction.steps ?? []).filter(
       (s) => s.type === "function_call",
@@ -210,11 +222,13 @@ export async function prioritizeWorkOrders(): Promise<PrioritizationRun> {
       }
     }
 
+    const ultima = i === MAX_ITERATIONS - 1 || Date.now() - inicio > PRESUPUESTO_MS;
     interaction = await client.interactions.create({
-      ...baseRequest,
+      ...(ultima ? cierre : baseRequest),
       previous_interaction_id: interaction.id,
       input: results,
     });
+    if (ultima) break;
   }
 
   const text = interaction.output_text;
